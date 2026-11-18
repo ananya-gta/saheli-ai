@@ -1,16 +1,16 @@
 """One shared Claude client, configured for production:
-   * explicit timeouts (connect 10 s, total CLAUDE_TIMEOUT s) — a hung request can't hang a user forever
+   * explicit timeout (CLAUDE_TIMEOUT s) — a hung request can't hang a user forever
    * SDK retries (max 2) with backoff on 429 / 5xx / 529-overloaded / connection errors
    * failure drills hook (resilience.inject) so the fallback paths can be demonstrated live
 Callers use client().messages.create(...) exactly like the SDK; exceptions are classified by resilience.classify."""
 import os
 
 import anthropic
-import httpx
 
 from . import config, resilience
 
-TIMEOUT = httpx.Timeout(float(os.getenv("CLAUDE_TIMEOUT", "90")), connect=10.0)
+# a plain number: anthropic>=2 ships its own HTTP library (httpx2) and rejects httpx.Timeout objects
+TIMEOUT = float(os.getenv("CLAUDE_TIMEOUT", "90"))
 _sdk: anthropic.Anthropic | None = None
 
 
