@@ -1,0 +1,47 @@
+# Production stack for the GoDaddy VPS:  docker compose up -d --build
+services:
+  api:
+    build: ./backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ENV: ${ENV:-production}
+      DATA_DIR: /data
+      SITES_DIR: /data/sites
+      UPLOADS_DIR: /data/uploads
+      PRIVATE_DIR: /data/private
+    volumes:
+      - data:/data               # database, private site data, uploads: only the API can see these
+      - sites:/data/sites        # public website files, shared read-only with Caddy
+    restart: unless-stopped
+    expose: ["8000"]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  web:
+    build: ./frontend            # builds the React app, then serves it (and every generated site) with Caddy
+    env_file:
+      - path: .env
+        required: false
+    ports: ["80:80", "443:443"]
+    volumes:
+      - sites:/data/sites:ro     # generated websites only, served at https://<slug>.<DOMAIN>
+      - caddy_data:/data-caddy
+      - caddy_config:/config
+    environment:
+      XDG_DATA_HOME: /data-caddy # keep HTTPS certificates across restarts
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+volumes:
+  data:
+  sites:
+  caddy_data:
+  caddy_config:

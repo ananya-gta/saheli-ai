@@ -1,0 +1,13 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 160
+
+[tool.ruff.lint]
+# pyflakes (unused names, undefined variables) + pycodestyle errors
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E701", "E702"]   # one-line fakes and stubs keep the tests readable
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

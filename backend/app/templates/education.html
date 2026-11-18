@@ -1,0 +1,139 @@
+{% extends "_base.html" %}
+{% import "_macros.html" as m with context %}
+{% block style %}
+/* ===== EDUCATION: clean, credible, modern ===== */
+.h-sec{font-weight:700;letter-spacing:-.025em;font-size:clamp(30px,3.8vw,46px)}
+.hero h1,.p-card h3,.feat h3,.steps h3,.faq summary,.quote blockquote{font-weight:700;letter-spacing:-.02em}
+.btn{border-radius:12px}
+.eyebrow::before{display:none}
+.eyebrow{background:color-mix(in srgb,var(--p) 9%,transparent);padding:7px 12px;border-radius:999px;letter-spacing:.1em}
+.hero{padding:130px 0 80px;background:linear-gradient(180deg,var(--alt),var(--bg))}
+.hero .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,70px);align-items:center}
+.hero h1{font-family:var(--head);font-size:clamp(40px,5.4vw,68px);line-height:1.08;margin:20px 0 12px}
+.hero .en{font-size:clamp(18px,2vw,22px);color:var(--muted);max-width:560px}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:40px;max-width:600px}
+.badges div{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.badges small{display:block;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.badges b{font-size:16px}
+.hero .visual{position:relative}
+.hero .visual .ph{aspect-ratio:5/4;border-radius:24px}
+.float-card{position:absolute;left:-26px;bottom:-26px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 24px 50px -24px rgba(15,27,45,.35);display:flex;gap:14px;align-items:center;max-width:300px}
+.float-card .ic{width:44px;height:44px;border-radius:12px;background:var(--p);color:var(--p-ink);display:grid;place-items:center}
+.float-card small{display:block;color:var(--muted);font-size:12.5px}
+.float-card b{font-size:15px}
+@media(max-width:900px){.hero .grid{grid-template-columns:1fr}.float-card{left:12px}}
+/* courses */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px}
+.course{background:var(--bg);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:transform .35s var(--ease),box-shadow .35s}
+.course:hover{transform:translateY(-4px);box-shadow:0 24px 50px -30px rgba(15,27,45,.35)}
+.course .ph{aspect-ratio:16/9}
+.course .body{padding:22px;display:flex;flex-direction:column;gap:8px;flex:1}
+.course .cat{font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.1em}
+.course h3{font-size:20px;line-height:1.3;font-family:var(--head);font-weight:700}
+.course p{color:var(--muted);font-size:14.5px;flex:1}
+.course .sched{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);background:var(--alt);border-radius:10px;padding:8px 12px}
+.course .sched .ico{width:16px;height:16px;color:var(--p)}
+.course .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:14px;border-top:1px solid var(--line)}
+.course .add{border-radius:10px;border-color:var(--p);color:var(--p)}
+.course .add:hover{background:var(--p);color:var(--p-ink)}
+/* teacher */
+.teacher{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(30px,6vw,80px);align-items:center}
+.teacher .card{background:var(--bg);border:1px solid var(--line);border-radius:24px;padding:34px;text-align:center}
+.teacher .avatar{width:150px;height:150px;border-radius:50%;margin:0 auto 18px;background:linear-gradient(140deg,var(--p),color-mix(in srgb,var(--p) 60%,#000));color:var(--p-ink);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:64px}
+.teacher .card b{font-size:22px;display:block}
+.teacher .card small{color:var(--muted)}
+.teacher blockquote{font-family:var(--head);font-weight:600;font-size:clamp(22px,2.4vw,28px);line-height:1.4;margin:16px 0}
+.teacher .en{color:var(--muted)}
+@media(max-width:860px){.teacher{grid-template-columns:1fr}}
+/* schedule */
+.table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg)}
+.table th,.table td{text-align:left;padding:16px 20px;border-bottom:1px solid var(--line);font-size:15px}
+.table th{background:var(--alt);font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.table tr:last-child td{border-bottom:none}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+.feat-grid .feat{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:26px}
+.feat .ic{border-radius:12px;background:color-mix(in srgb,var(--p) 9%,var(--bg));border:none}
+.steps{border-radius:18px;overflow:hidden}
+form.enq{border-radius:20px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.thumbs .ph{aspect-ratio:4/3;border-radius:16px}
+@media(max-width:760px){.thumbs{grid-template-columns:1fr 1fr}}
+{% endblock %}
+
+{% block main %}
+<section class="hero">
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow rv">{{ m.icon("pin") }} {{ c.area_text }}</span>
+      <h1 class="rv d1">{{ c.tagline_en }}</h1>
+      <p class="en rv d2">{{ c.hero_subtitle or c.intro_en }}</p>
+      <div class="ctas rv d3"><a class="btn btn-p" href="#contact">{{ labels.cta }} {{ m.icon("arrow") }}</a><a class="btn btn-line" href="#shop">View {{ labels.shop | lower }}</a></div>
+      {% if facts %}<div class="badges rv d4">{% for f in facts[:3] %}<div><small>{{ f.label }}</small><b>{{ f.text }}</b></div>{% endfor %}</div>{% endif %}
+    </div>
+    <div class="visual rv d2">
+      {{ m.photo(img.hero[0] if img.hero else None, "", c.business_name, c.business_name[:1], True) }}
+      {% if c.schedule_rows %}<div class="float-card"><span class="ic">{{ m.icon("calendar") }}</span><div><small>{{ c.schedule_rows[0].batch }}</small><b>{{ c.schedule_rows[0].days }} · {{ c.schedule_rows[0].time }}</b></div></div>
+      {% elif c.timings_text %}<div class="float-card"><span class="ic">{{ m.icon("clock") }}</span><div><small>Class timings</small><b>{{ c.timings_text }}</b></div></div>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Why parents choose us</span><h2 class="h-sec">{{ c.intro_title or "Learning that actually sticks" }}</h2><p class="lead" style="margin:0 auto">{{ c.intro_en }}</p></div><div class="feat-grid">{{ m.features(c.highlights) }}</div></div>
+</section>
+
+<section class="sec alt" id="shop">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">{{ labels.shop_eyebrow }}</span><h2 class="h-sec">{{ labels.shop }}</h2></div>
+    {% if categories | length > 1 %}<div class="filters rv" data-filters><button class="on" data-cat="*">All</button>{% for cat in categories %}<button data-cat="{{ cat }}">{{ cat }}</button>{% endfor %}</div>{% endif %}
+    <div class="course-grid">
+      {% for p in c.products %}
+      <article class="course rv d{{ loop.index0 % 3 }}" data-cat-item="{{ p.category or '' }}">
+        {{ m.photo(product_imgs[loop.index0], "", p.name, p.name[:1]) }}
+        <div class="body">
+          {% if p.category %}<span class="cat">{{ p.category }}</span>{% endif %}
+          <h3>{{ p.name }}</h3><p>{{ p.description }}</p>
+          {% if p.schedule %}<span class="sched">{{ m.icon("calendar") }}{{ p.schedule }}</span>{% endif %}
+          <div class="foot">{{ m.price(p) }}<a class="add" href="#contact" data-prefill="{{ p.name }}">Enquire</a></div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if c.schedule_rows %}
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">Timetable</span><h2 class="h-sec">Batches &amp; timings</h2></div>
+    <div class="rv" style="overflow-x:auto"><table class="table"><thead><tr><th>Batch</th><th>Days</th><th>Time</th></tr></thead><tbody>
+      {% for r in c.schedule_rows %}<tr><td><b>{{ r.batch }}</b></td><td>{{ r.days }}</td><td>{{ r.time }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="sec{{ '' if c.schedule_rows else '' }} alt" id="story">
+  <div class="wrap teacher">
+    <div class="card rv"><div class="avatar">{{ (owner or c.business_name)[:1] }}</div><b>{{ owner or c.business_name }}</b><small>{{ c.faculty_role or "Founder & teacher" }}</small></div>
+    <div class="rv d1">
+      <span class="eyebrow">{{ labels.story }}</span>
+      <h2 class="h-sec">{{ c.story_title or "Teaching that builds confidence" }}</h2>
+      <blockquote>“{{ c.story_quote }}”</blockquote>
+      <p class="en">{{ c.faculty_bio_en or c.story_en }}</p>
+    </div>
+  </div>
+</section>
+
+{% if img.gallery | length >= 4 %}
+<section class="sec"><div class="wrap"><div class="sec-head rv"><span class="eyebrow">{{ labels.gallery }}</span><h2 class="h-sec">{{ c.gallery_title or "A focused place to learn" }}</h2></div>
+<div class="thumbs">{% for g in img.gallery[:4] %}<div class="rv d{{ loop.index0 }}">{{ m.photo(g) }}</div>{% endfor %}</div></div></section>
+{% endif %}
+
+<section class="sec alt"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Getting started</span><h2 class="h-sec">{{ labels.how }}</h2></div>{{ m.steps(c.process_steps) }}</div></section>
+
+{% if testimonials %}<section class="sec"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Parents &amp; students</span><h2 class="h-sec">What families say</h2></div>{{ m.quotes(testimonials) }}</div></section>{% endif %}
+{% if c.faqs %}<section class="sec" id="faq"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">FAQ</span><h2 class="h-sec">Common questions</h2></div>{{ m.faq(c.faqs) }}</div></section>{% endif %}
+
+{{ m.contact_section("education", c.products | map(attribute="name") | list) }}
+{% endblock %}

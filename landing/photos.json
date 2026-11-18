@@ -1,0 +1,15 @@
+{
+  "boutique": {
+    "src": "boutique-1-woman-sewing-machine-fabric-1600.jpg",
+    "src_small": "boutique-1-woman-sewing-machine-fabric-800.jpg",
+    "srcset": "img/boutique-1-woman-sewing-machine-fabric-800.jpg 800w, img/boutique-1-woman-sewing-machine-fabric-1600.jpg 861w",
+    "color": "#776254",
+    "alt": "Free seamstress sewing fabric image",
+    "photographer": "Openverse",
+    "photographer_url": "https://www.rawpixel.com/image/5921283/photo-image-public-domain-hands-person",
+    "page_url": "https://www.rawpixel.com/image/5921283/photo-image-public-domain-hands-person",
+    "source": "Openverse",
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  }
+}

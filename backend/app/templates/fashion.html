@@ -1,0 +1,143 @@
+{% extends "_base.html" %}
+{% import "_macros.html" as m with context %}
+{% block style %}
+/* ===== FASHION: editorial independent label ===== */
+body{font-size:16px;letter-spacing:.005em}
+.btn{border-radius:0;text-transform:uppercase;letter-spacing:.16em;font-size:12.5px;min-height:52px;padding:0 30px}
+.btn-sm{min-height:40px;font-size:11.5px}
+.eyebrow{letter-spacing:.32em;font-size:11.5px}
+.h-sec{font-weight:400;font-size:clamp(36px,5vw,64px)}
+.brand{font-weight:500;letter-spacing:.02em;text-transform:uppercase;font-size:21px}
+.add,.qty,.filters button,.tag{border-radius:0}
+.tag{background:var(--ink);color:var(--bg)}
+.hero{min-height:100svh;padding:110px 0 50px;display:flex;align-items:center}
+.hero .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,70px);align-items:end}
+.hero h1{font-family:var(--head);font-weight:400;font-size:clamp(52px,8.4vw,128px);line-height:.95;letter-spacing:-.02em;margin:24px 0}
+.hero h1 em{font-style:italic;color:var(--p)}
+.hero .hi-line{font-size:clamp(17px,1.6vw,19px);color:var(--muted);margin-bottom:30px;max-width:480px}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
+.hero .stack{position:relative;height:min(78vh,720px)}
+.hero .stack .main{position:absolute;inset:0 0 0 18%}
+.hero .stack .main .ph{height:100%}
+.hero .stack .side{position:absolute;left:0;bottom:8%;width:42%;aspect-ratio:3/4;border:10px solid var(--bg);box-shadow:0 30px 60px -30px rgba(0,0,0,.4)}
+.hero .stack .side .ph{height:100%}
+.hero .vert{position:absolute;right:-8px;top:0;writing-mode:vertical-rl;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--muted)}
+.hero .meta-row{display:flex;gap:34px;margin-top:46px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hero .meta-row b{display:block;color:var(--ink);font-weight:500;font-size:14px;letter-spacing:.06em;text-transform:none;margin-top:4px}
+@media(max-width:900px){.hero .grid{grid-template-columns:1fr}.hero .stack{height:520px}}
+.marquee{background:var(--ink);color:var(--bg);border:none}
+.marquee .track{text-transform:uppercase;letter-spacing:.24em;font-family:var(--body);font-size:14px;font-weight:500}
+
+/* collections */
+.cols-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.coll{position:relative;display:block;text-decoration:none;color:#fff;overflow:hidden}
+.coll .ph{aspect-ratio:3/4}
+.coll::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.6))}
+.coll .t{position:absolute;left:24px;right:24px;bottom:22px;z-index:1;display:flex;justify-content:space-between;align-items:flex-end}
+.coll .t b{font-family:var(--head);font-weight:400;font-size:30px}
+.coll .t span{font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;border-bottom:1px solid #fff;padding-bottom:3px}
+/* products */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:46px 22px}
+.p-card .ph{--ratio:3/4}
+.p-card .meta{align-items:flex-start;padding-top:18px}
+.p-card h3{font-size:20px;font-weight:400}
+.p-card .price{font-size:15px;font-weight:500;letter-spacing:.04em}
+/* lookbook */
+.look{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.look>div:nth-child(1){grid-column:1/6;grid-row:span 2}.look>div:nth-child(2){grid-column:6/10}.look>div:nth-child(3){grid-column:10/13}
+.look>div:nth-child(4){grid-column:6/13}
+.look .ph{height:100%;min-height:260px}
+.look>div:nth-child(1) .ph{min-height:560px}
+@media(max-width:760px){.look{grid-template-columns:1fr 1fr}.look>div{grid-column:auto!important;grid-row:auto!important}.look>div:nth-child(1) .ph{min-height:300px}}
+/* story */
+.story{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,7vw,110px);align-items:center}
+.story .ph{aspect-ratio:4/5}
+.story blockquote{font-family:var(--head);font-style:italic;font-size:clamp(28px,3.4vw,46px);line-height:1.2;margin:24px 0}
+.story .hi{font-size:20px;color:var(--muted);margin-bottom:12px}
+.story .en{color:var(--muted)}
+@media(max-width:860px){.story{grid-template-columns:1fr}}
+.feat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:30px;border-block:1px solid var(--line);padding:46px 0}
+.feat .ic{border-radius:0}
+form.enq,.field input,.field select,.field textarea{border-radius:0}
+{% endblock %}
+
+{% block main %}
+<section class="hero">
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow rv">{{ c.area_short or city }} · {{ labels.shop_eyebrow }}</span>
+      <h1 class="rv d1">{{ c.tagline_en }}</h1>
+      <p class="hi-line rv d2">{{ c.hero_subtitle }}</p>
+      <div class="ctas rv d3"><a class="btn btn-p" href="#shop">{{ labels.cta }}</a><a class="btn btn-line" href="#story">{{ labels.story }}</a></div>
+      <div class="meta-row rv d4">{% for f in facts[:3] %}<div>{{ f.label }}<b>{{ f.text }}</b></div>{% endfor %}</div>
+    </div>
+    <div class="stack rv d2">
+      <div class="main">{{ m.photo(img.hero[0] if img.hero else None, "", c.business_name, c.business_name[:1], True) }}</div>
+      <div class="side">{{ m.photo(img.gallery[0] if img.gallery else None, "", c.business_name, c.business_name[:1]) }}</div>
+      <span class="vert">{{ c.business_name }}</span>
+    </div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track">{% for _ in range(2) %}<span>{% for w in c.marquee_words %}{{ w }}{% if not loop.last %}</span><span>{% endif %}{% endfor %}</span>{% endfor %}</div></div>
+
+{% if categories | length > 1 %}
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">Shop by</span><h2 class="h-sec">Collections</h2></div>
+    <div class="cols-grid">
+      {% for cat in categories[:3] %}{% set idx = (c.products | map(attribute="category") | list).index(cat) %}
+      <a class="coll zoom rv d{{ loop.index0 }}" href="#shop" data-jump="{{ cat }}">{{ m.photo(product_imgs[idx], "", cat, cat[:1]) }}<div class="t"><b>{{ cat }}</b><span>Explore</span></div></a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="sec{{ ' alt' if categories | length > 1 else '' }}" id="shop">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">{{ labels.shop_eyebrow }}</span><h2 class="h-sec">{{ c.collection_title or "New in" }}</h2><p class="lead">{{ c.intro_en }}</p></div>
+    {% if categories | length > 1 %}<div class="filters rv" data-filters><button class="on" data-cat="*">All</button>{% for cat in categories %}<button data-cat="{{ cat }}">{{ cat }}</button>{% endfor %}</div>{% endif %}
+    <div class="shop-grid">
+      {% for p in c.products %}
+      <article class="p-card zoom rv d{{ loop.index0 % 4 }}" data-cat-item="{{ p.category or '' }}">
+        <div style="position:relative">{% if p.badge %}<span class="tag">{{ p.badge }}</span>{% endif %}{{ m.photo(product_imgs[loop.index0], "", p.name, p.name[:1]) }}</div>
+        <div class="meta"><h3>{{ p.name }}</h3><p>{{ p.description }}</p><div class="buy" style="width:100%">{{ m.price(p) }}{{ m.buy(p, loop.index0, "+ Add to bag") }}</div></div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="sec"><div class="wrap"><div class="feat-row">{{ m.features(c.highlights) }}</div></div></section>
+
+{% if img.gallery | length >= 4 %}
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">{{ labels.gallery }}</span><h2 class="h-sec">{{ c.gallery_title or "In the details" }}</h2></div>
+    <div class="look">{% for g in img.gallery[1:5] %}<div class="rv d{{ loop.index0 }}">{{ m.photo(g) }}</div>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+<section class="sec alt" id="story">
+  <div class="wrap story">
+    <div class="rv">{{ m.photo(img.story[0] if img.story else None, "", owner or c.business_name, (owner or c.business_name)[:1]) }}</div>
+    <div class="rv d1">
+      <span class="eyebrow">{{ labels.story }}</span>
+      <blockquote>“{{ c.story_quote }}”</blockquote>
+      <p class="en">{{ c.story_en }}</p>
+      {% if owner %}<p style="margin-top:26px;font-size:12px;letter-spacing:.3em;text-transform:uppercase">{{ owner }} — Founder</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Service</span><h2 class="h-sec">{{ labels.how }}</h2></div>{{ m.steps(c.process_steps) }}</div>
+</section>
+
+{% if testimonials %}<section class="sec alt"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Notes from clients</span><h2 class="h-sec">Kind words</h2></div>{{ m.quotes(testimonials) }}</div></section>{% endif %}
+{% if c.faqs %}<section class="sec" id="faq"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Questions</span><h2 class="h-sec">FAQ</h2></div>{{ m.faq(c.faqs) }}</div></section>{% endif %}
+
+{{ m.contact_section("boutique", c.products | map(attribute="name") | list) }}
+{% endblock %}

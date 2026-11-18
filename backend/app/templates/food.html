@@ -1,0 +1,170 @@
+{% extends "_base.html" %}
+{% import "_macros.html" as m with context %}
+{% block style %}
+/* ===== FOOD: bakery (refined patisserie) / homefood (artisanal pantry label) ===== */
+.hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;padding:140px 0 70px;color:#fff;overflow:hidden}
+.hero .bg{position:absolute;inset:0}
+.hero .bg .ph{position:absolute;inset:0;height:100%}
+.hero .bg .ph img{transform:scale(1.08);animation:kb 18s var(--ease) forwards}
+@keyframes kb{to{transform:scale(1)}}
+.hero .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,12,6,.25) 0%,rgba(20,12,6,.15) 40%,rgba(20,12,6,.78) 100%)}
+.hero .wrap{position:relative;z-index:1;width:100%}
+.hero .eyebrow{color:#fff}
+.hero h1{font-family:var(--head);font-weight:500;font-size:clamp(46px,7.2vw,104px);line-height:1.02;letter-spacing:-.015em;max-width:900px;margin:18px 0 10px}
+.hero .en{font-size:clamp(17px,1.6vw,20px);opacity:.92;max-width:560px}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}
+.hero .btn-line{color:#fff}
+.hero .facts{display:flex;gap:28px;flex-wrap:wrap;margin-top:46px;padding-top:24px;border-top:1px solid rgba(255,255,255,.25);font-size:14.5px}
+.hero .facts span{display:flex;align-items:center;gap:8px;opacity:.92}
+.hero .facts .ico{width:18px;height:18px}
+
+/* homefood: split hero, warm paper, jar-label card */
+.v-homefood .hero{min-height:auto;color:var(--ink);padding:130px 0 80px;align-items:center;background:
+  radial-gradient(80% 60% at 100% 0,color-mix(in srgb,var(--a) 22%,transparent),transparent 70%),var(--bg)}
+.v-homefood .hero .bg{display:none}
+.v-homefood .hero .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,70px);align-items:center}
+.v-homefood .hero .eyebrow{color:var(--p)}
+.v-homefood .hero h1{color:var(--ink)}
+.v-homefood .hero .en{color:var(--muted)}
+.v-homefood .hero .btn-line{color:var(--ink)}
+.v-homefood .hero .facts{border-top-color:var(--line);color:var(--muted)}
+.v-homefood .hero .facts .ico{color:var(--p)}
+.arch{position:relative}
+.arch .ph{aspect-ratio:4/5;border-radius:999px 999px 18px 18px}
+.label-card{position:absolute;left:-28px;bottom:36px;background:var(--bg);border:1px solid var(--line);padding:18px 22px;max-width:250px;box-shadow:0 24px 50px -24px rgba(40,20,5,.45)}
+.label-card::before{content:"";position:absolute;inset:6px;border:1px dashed color-mix(in srgb,var(--p) 45%,transparent);pointer-events:none}
+.label-card small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--p);font-weight:600}
+.label-card b{display:block;font-family:var(--head);font-size:22px;font-weight:600;margin:4px 0}
+.label-card span{font-size:13px;color:var(--muted)}
+.seal{position:absolute;right:-14px;top:30px;width:112px;height:112px;border-radius:50%;background:var(--p);color:var(--p-ink);display:grid;place-items:center;text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;line-height:1.5;animation:rot 26s linear infinite}
+.seal span{display:block;padding:14px}
+@keyframes rot{to{transform:rotate(360deg)}}
+@media(max-width:900px){.v-homefood .hero .grid{grid-template-columns:1fr}.label-card{left:12px}.seal{right:8px}}
+
+/* signature product */
+.signature{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,6vw,90px);align-items:center}
+.signature .ph{aspect-ratio:4/5}
+.v-bakery .signature .ph{border-radius:220px 220px 0 0}
+.signature .price{font-family:var(--head);font-size:34px;font-weight:500;display:block;margin:20px 0 26px}
+@media(max-width:860px){.signature{grid-template-columns:1fr}}
+
+/* menu */
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:34px 26px}
+.v-bakery .p-card .ph{border-radius:14px;--ratio:1/1}
+.v-homefood .p-card{border:1px solid var(--line);padding:12px;background:var(--bg)}
+.v-homefood .p-card .ph{--ratio:1/1}
+.v-homefood .p-card .meta{padding:16px 8px 6px}
+.v-homefood .p-card h3::before{content:"№ " attr(data-n);display:block;font-family:var(--body);font-size:11px;letter-spacing:.2em;color:var(--p);font-weight:600;margin-bottom:4px}
+
+/* gallery strip */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.strip .ph{aspect-ratio:3/4}
+.strip .ph:nth-child(even){transform:translateY(40px)}
+.v-bakery .strip .ph{border-radius:12px}
+@media(max-width:760px){.strip{grid-template-columns:repeat(2,1fr)}.strip .ph:nth-child(even){transform:none}}
+
+/* story */
+.story{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(30px,6vw,90px);align-items:center}
+.story .ph{aspect-ratio:4/5}
+.story blockquote{font-family:var(--head);font-style:italic;font-size:clamp(26px,2.8vw,36px);line-height:1.3;margin:18px 0 18px}
+.story .en{color:var(--muted);font-size:17px;max-width:560px}
+.story .sig{margin-top:26px;font-family:var(--head);font-style:italic;font-size:26px;color:var(--p)}
+@media(max-width:860px){.story{grid-template-columns:1fr}}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:34px}
+{% endblock %}
+
+{% block main %}
+<section class="hero">
+  {% if variant != "homefood" %}<div class="bg">{{ m.photo(img.hero[0] if img.hero else None, "", c.business_name, "", True) }}</div>{% endif %}
+  <div class="wrap">
+    {% if variant == "homefood" %}<div class="grid"><div>{% endif %}
+      <span class="eyebrow rv">{{ c.area_text }}</span>
+      <h1 class="rv d1">{{ c.tagline_en }}</h1>
+      <p class="en rv d2">{{ c.hero_subtitle or c.intro_en }}</p>
+      <div class="ctas rv d3">
+        <a class="btn {{ 'btn-p' if variant == 'homefood' else 'btn-light' }}" href="#shop">{{ labels.cta }} {{ m.icon("arrow") }}</a>
+        <a class="btn btn-line" href="#story">{{ labels.story }}</a>
+      </div>
+      <div class="facts rv d4">{% for f in facts %}<span>{{ m.icon(f.icon) }}{{ f.text }}</span>{% endfor %}</div>
+    {% if variant == "homefood" %}</div>
+      <div class="arch rv d2">
+        {{ m.photo(img.hero[0] if img.hero else None, "", c.business_name, c.business_name[:1], True) }}
+        <div class="label-card"><small>Homemade · Small batch</small><b>{{ c.business_name }}</b><span>{{ c.area_short or city }}</span></div>
+        <div class="seal"><span>Handmade<br>with care</span></div>
+      </div>
+    </div>{% endif %}
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track">{% for _ in range(2) %}<span>{% for w in c.marquee_words %}{{ w }}{% if not loop.last %}</span><span>{% endif %}{% endfor %}</span>{% endfor %}</div></div>
+
+{% set sig = c.products | selectattr("badge") | first or c.products[0] %}
+{% set sig_i = c.products.index(sig) %}
+<section class="sec">
+  <div class="wrap signature">
+    <div class="rv">{{ m.photo(product_imgs[sig_i], "", sig.name, sig.name[:1]) }}</div>
+    <div class="rv d1">
+      <span class="eyebrow">{{ sig.badge or "Signature" }}</span>
+      <h2 class="h-sec">{{ sig.name }}</h2>
+      <p class="lead">{{ sig.long_description or sig.description }}</p>
+      {{ m.price(sig) }}
+      {{ m.buy(sig, sig_i, "+ Add to order") }}
+    </div>
+  </div>
+</section>
+
+<section class="sec alt" id="shop">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">{{ labels.shop_eyebrow }}</span><h2 class="h-sec">{{ labels.shop }}</h2><p class="lead">{{ c.intro_en }}</p></div>
+    {% if categories | length > 1 %}<div class="filters rv" data-filters><button class="on" data-cat="*">All</button>{% for cat in categories %}<button data-cat="{{ cat }}">{{ cat }}</button>{% endfor %}</div>{% endif %}
+    <div class="menu-grid">
+      {% for p in c.products %}
+      <article class="p-card zoom rv d{{ loop.index0 % 4 }}" data-cat-item="{{ p.category or '' }}">
+        <div style="position:relative">{% if p.badge %}<span class="tag">{{ p.badge }}</span>{% endif %}{{ m.photo(product_imgs[loop.index0], "", p.name, p.name[:1]) }}</div>
+        <div class="meta"><h3 data-n="{{ '%02d' % loop.index }}">{{ p.name }}</h3><p>{{ p.description }}</p>
+          <div class="buy">{{ m.price(p) }}{{ m.buy(p, loop.index0) }}</div></div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap"><div class="feat-grid">{{ m.features(c.highlights) }}</div></div>
+</section>
+
+{% if img.gallery %}
+<section class="sec alt" style="padding-bottom:clamp(110px,12vw,160px)">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">{{ labels.gallery }}</span><h2 class="h-sec">{{ c.gallery_title or "Made by hand, every day" }}</h2></div>
+    <div class="strip">{% for g in img.gallery[:4] %}<div class="rv d{{ loop.index0 }}">{{ m.photo(g) }}</div>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+<section class="sec" id="story">
+  <div class="wrap story">
+    <div class="rv">{{ m.photo(img.story[0] if img.story else None, "", owner or c.business_name, (owner or c.business_name)[:1]) }}</div>
+    <div class="rv d1">
+      <span class="eyebrow">{{ labels.story }}</span>
+      <h2 class="h-sec">{{ c.story_title or "Made the way we make it at home" }}</h2>
+      <blockquote>“{{ c.story_quote }}”</blockquote>
+      <p class="en">{{ c.story_en }}</p>
+      {% if owner %}<p class="sig">— {{ owner }}</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="sec alt">
+  <div class="wrap">
+    <div class="sec-head center rv"><span class="eyebrow">Simple &amp; quick</span><h2 class="h-sec">{{ labels.how }}</h2></div>
+    {{ m.steps(c.process_steps) }}
+  </div>
+</section>
+
+{% if testimonials %}<section class="sec"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">Kind words</span><h2 class="h-sec">From our customers</h2></div>{{ m.quotes(testimonials) }}</div></section>{% endif %}
+
+{% if c.faqs %}<section class="sec" id="faq"><div class="wrap"><div class="sec-head center rv"><span class="eyebrow">FAQ</span><h2 class="h-sec">Good to know</h2></div>{{ m.faq(c.faqs) }}</div></section>{% endif %}
+
+{{ m.contact_section("food", []) }}
+{% endblock %}
