@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ananya-gta/saheli-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ananya-gta/saheli-ai/actions/workflows/ci.yml)
 
-**Your business, online — in one conversation.**
+**Your talent deserves a business. Saheli makes it happen.**
 
 Saheli ("friend" in Hindi) is a Hindi-first, voice-first AI business partner built with **Claude** and **GoDaddy**.
 She helps a first-time woman entrepreneur in India go from *"main ghar se achaar bechti hoon"* to a live,
