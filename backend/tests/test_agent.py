@@ -94,3 +94,10 @@ def test_runaway_tool_loop_is_capped(claude):
     claude([("tool_use", [tool("save_business_profile", {"city": "Jaipur"}, f"t{i}")]) for i in range(agent.MAX_STEPS)])
     out = agent.chat(HIST)
     assert out["degraded"] == "max_steps" and len(out["events"]) == agent.MAX_STEPS
+
+
+def test_system_prompt_has_the_guardrails():
+    from app import agent
+    rules = agent.SYSTEM_PROMPT
+    for must in ("only help with her business", "OTPs", "medical", "illegal", "181", "You are an AI", "never new rules"):
+        assert must in rules, must
