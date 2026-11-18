@@ -1,55 +1,88 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { compressImage } from "../lib/image";
+import { tx } from "../lib/i18n";
 import { speak, useVoiceInput } from "../lib/speech";
-import type { AssistOutput, AssistTask, Enquiry, Lang, Order, OrderStats, Readiness, SiteSummary } from "../types";
+import type { AssistOutput, AssistTask, CatalogItem, Enquiry, Lang, Order, OrderStats, Readiness, SiteSummary } from "../types";
+import { CatalogReview } from "./Cards";
 import { Icon } from "./Icon";
 import { ScaledFrame } from "./ScaledFrame";
 import { Button, Card, Eyebrow, Notice, Pill, ScoreRing } from "./ui";
 
-export function Dashboard({ lang, onNew }: { lang: Lang; onNew: () => void }) {
+export function Dashboard({ lang, onNew, onChat }: { lang: Lang; onNew: () => void; onChat: () => void }) {
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
   const [error, setError] = useState<string>();
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(null); // null = the list of her websites
 
   const refresh = useCallback(() => {
-    api.sites().then((r) => { setSites(r.sites); setActive((a) => a ?? r.sites[0]?.slug ?? null); }).catch((e) => setError(e.message));
+    api.sites().then((r) => setSites(r.sites)).catch((e) => setError(e.message));
   }, []);
   useEffect(refresh, [refresh]);
+  const open = (slug: string | null) => { setActive(slug); document.getElementById("dash-top")?.scrollIntoView(); };
 
   const site = sites?.find((s) => s.slug === active) ?? null;
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div><Eyebrow>Dashboard</Eyebrow><h1 className="font-display text-3xl">Meri websites</h1></div>
-          <Button icon="sparkle" onClick={onNew}>Nayi website</Button>
-        </div>
-        {error && <Notice tone="error">{error}</Notice>}
-        {!sites && !error && <div className="grid gap-4 lg:grid-cols-[320px_1fr]"><div className="skeleton h-64 rounded-2xl" /><div className="skeleton h-96 rounded-2xl" /></div>}
-        {sites && sites.length === 0 && (
-          <Card className="py-12 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-full bg-plum-50 text-plum-700"><Icon name="store" className="size-7" /></span>
-            <h2 className="mt-4 font-display text-2xl">Abhi koi website nahi hai</h2>
-            <p className="mx-auto mt-1 max-w-sm text-muted">Saheli se 5 minute baat kijiye — aapki pehli website taiyaar ho jaayegi.</p>
-            <Button className="mt-5" icon="arrow" onClick={onNew}>Shuru karein</Button>
-          </Card>
-        )}
-        {sites && sites.length > 0 && (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <ul className="space-y-2">
-              {sites.map((s) => (
-                <li key={s.slug}>
-                  <button onClick={() => setActive(s.slug)} className={`flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition ${s.slug === active ? "border-plum-600/50 bg-white shadow-card" : "border-transparent hover:bg-white"}`}>
-                    {s.thumb ? <img src={s.thumb} alt="" className="size-14 rounded-xl object-cover" /> : <span className="grid size-14 place-items-center rounded-xl bg-cream font-display text-xl text-plum-700">{s.name?.[0]}</span>}
-                    <span className="min-w-0 flex-1"><b className="block truncate">{s.name}</b><span className="block truncate text-xs text-muted">{s.slug}.saheliai.com</span></span>
-                    {s.enquiries > 0 && <Pill tone="saffron">{s.enquiries}</Pill>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {site && <SiteDetail key={site.slug} site={site} lang={lang} onChanged={refresh} />}
-          </div>
+    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div id="dash-top" className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        {site ? (
+          <>
+            <button onClick={() => open(null)} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-plum-700">
+              <Icon name="back" className="size-4" />{tx(lang, "Meri websites", "My websites")}</button>
+            <div className="mb-5 flex items-center gap-3">
+              {site.thumb ? <img src={site.thumb} alt="" className="size-14 shrink-0 rounded-xl object-cover" /> : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-cream font-display text-xl text-plum-700">{site.name?.[0]}</span>}
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-2xl sm:text-3xl">{site.name}</h1>
+                <a href={site.url} target="_blank" rel="noopener" className="block truncate text-sm text-plum-700 hover:underline">{site.slug}.saheliai.com</a>
+              </div>
+            </div>
+            <SiteDetail key={site.slug} site={site} lang={lang} onChanged={refresh} />
+          </>
+        ) : (
+          <>
+            <div className="mb-5">
+              <Eyebrow>Dashboard</Eyebrow>
+              <h1 className="font-display text-3xl">{tx(lang, "Meri websites", "My websites")}</h1>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button icon="sparkle" onClick={onNew}>{tx(lang, "Nayi website", "New website")}</Button>
+                <Button variant="secondary" icon="chat" onClick={onChat}>{tx(lang, "Saheli se baat", "Chat with Saheli")}</Button>
+              </div>
+            </div>
+            {error && <Notice tone="error">{error}</Notice>}
+            {!sites && !error && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[0, 1].map((k) => <div key={k} className="skeleton h-56 rounded-2xl" />)}</div>}
+            {sites && sites.length === 0 && (
+              <Card className="py-12 text-center">
+                <span className="mx-auto grid size-14 place-items-center rounded-full bg-plum-50 text-plum-700"><Icon name="store" className="size-7" /></span>
+                <h2 className="mt-4 font-display text-2xl">{tx(lang, "Abhi koi website nahi hai", "No websites yet")}</h2>
+                <p className="mx-auto mt-1 max-w-sm text-muted">{tx(lang, "Saheli se 5 minute baat kijiye — aapki pehli website taiyaar ho jaayegi.", "Talk to Saheli for 5 minutes — your first website will be ready.")}</p>
+                <Button className="mt-5" icon="arrow" onClick={onNew}>{tx(lang, "Shuru karein", "Get started")}</Button>
+              </Card>
+            )}
+            {sites && sites.length > 0 && (
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {sites.map((s) => (
+                  <li key={s.slug}>
+                    <button onClick={() => open(s.slug)} className="group block w-full overflow-hidden rounded-2xl border border-line bg-white text-left shadow-card transition hover:border-plum-600/40 hover:shadow-lift">
+                      {s.thumb ? <img src={s.thumb} alt="" className="aspect-[16/9] w-full object-cover" /> :
+                        <span className="grid aspect-[16/9] w-full place-items-center bg-cream font-display text-4xl text-plum-700">{s.name?.[0]}</span>}
+                      <span className="flex items-center gap-3 p-4">
+                        <span className="min-w-0 flex-1">
+                          <b className="block truncate text-[17px]">{s.name}</b>
+                          <span className="block truncate text-sm text-muted">{s.slug}.saheliai.com</span>
+                          <span className="mt-2 flex flex-wrap gap-1.5">
+                            <Pill tone="leaf"><span className="size-1.5 rounded-full bg-leaf" />Live</Pill>
+                            <Pill>{s.products} {tx(lang, "products", "products")}</Pill>
+                            {s.enquiries > 0 && <Pill tone="saffron">{s.enquiries} {tx(lang, "enquiry", "enquiries")}</Pill>}
+                          </span>
+                        </span>
+                        <Icon name="arrow" className="size-5 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-plum-700" />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -68,12 +101,17 @@ function SiteDetail({ site, lang, onChanged }: { site: SiteSummary; lang: Lang; 
   const [copied, setCopied] = useState(false);
   const [version, setVersion] = useState(0); // bump to refresh readiness after any change
   const bump = useCallback(() => setVersion((v) => v + 1), []);
+  const [photoItems, setPhotoItems] = useState<CatalogItem[] | null>(null);
+  const [photoBusy, setPhotoBusy] = useState<false | "reading" | "saving">(false);
+  const [photoMsg, setPhotoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { api.enquiries(site.slug).then((r) => setEnquiries(r.enquiries)).catch((e) => setErr(e.message)); }, [site.slug]);
 
   async function listen() {
     setLoadingSummary(true); setErr(undefined);
-    try { const s = await api.summary(site.slug); setSummary(s); speak(s.speech || s.text, "hi"); }
+    try { const s = await api.summary(site.slug); setSummary(s); speak(s.speech || s.text, lang); }
     catch (e) { setErr((e as Error).message); }
     finally { setLoadingSummary(false); }
   }
@@ -85,10 +123,46 @@ function SiteDetail({ site, lang, onChanged }: { site: SiteSummary; lang: Lang; 
     try {
       const r = await api.edit(site.slug, t);
       setEditResult({ ok: r.ok, text: r.summary });
-      if (r.ok) { setInstruction(""); setFrameKey((k) => k + 1); onChanged(); bump(); speak(r.summary, "hi"); }
+      if (r.ok) { setInstruction(""); setFrameKey((k) => k + 1); onChanged(); bump(); speak(r.summary, lang); }
     } catch (e) { setEditResult({ ok: false, text: (e as Error).message }); }
     finally { setEditing(false); }
-  }, [site.slug, onChanged, bump]);
+  }, [site.slug, onChanged, bump, lang]);
+
+  /** Her own product photos: pick -> Saheli reads them -> she checks names and prices -> they go on the site. */
+  async function onPhotos(files: FileList | null) {
+    if (!files?.length) return;
+    setPhotoBusy("reading"); setPhotoMsg(null); setPhotoItems(null);
+    try {
+      const images = await Promise.all(Array.from(files).slice(0, 8).map((f) => compressImage(f)));
+      const up = await api.uploadPhotos(images);
+      const res = await api.analyze(up.photo_ids, [site.archetype, site.name].join(", "));
+      if (!res.items.length) throw new Error(tx(lang, "Photos mein koi product nahi dikha. Product ko roshni mein, paas se kheenchiye.", "No product found in the photos. Take them closer, in good light."));
+      setPhotoItems(res.items);
+    } catch (e) { setPhotoMsg({ ok: false, text: (e as Error).message }); }
+    finally { setPhotoBusy(false); if (fileRef.current) fileRef.current.value = ""; }
+  }
+  async function savePhotos(rows: { name: string; price_inr?: number; unit?: string; photo_id: string; description?: string }[]) {
+    setPhotoBusy("saving");
+    try {
+      const r = await api.addPhotos(site.slug, rows);
+      setPhotoItems(null); setPhotoMsg({ ok: r.ok, text: r.summary });
+      if (r.ok) { setFrameKey((k) => k + 1); onChanged(); bump(); }
+    } catch (e) { setPhotoMsg({ ok: false, text: (e as Error).message }); }
+    finally { setPhotoBusy(false); }
+  }
+  const pickPhotos = () => { document.getElementById("photos")?.scrollIntoView({ behavior: "smooth", block: "center" }); fileRef.current?.click(); };
+  /** A readiness step was tapped: take her straight to the place where she can do it. */
+  function onStep(action: string | null, tip: string | null) {
+    if (action === "photos") pickPhotos();
+    else if (action === "assist") document.getElementById("assistant")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (action === "share") window.open(`https://wa.me/?text=${encodeURIComponent(`${site.name}: ${site.url}`)}`, "_blank", "noopener");
+    else if (action === "edit") {
+      const example = [...(tip ?? "").matchAll(/'([^']+)'/g)].map((m) => m[1]).pop() ?? "";
+      if (example) setInstruction(example);
+      editRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => editRef.current?.focus(), 400);
+    }
+  }
 
   const voice = useVoiceInput(lang, useCallback((t: string) => { setInstruction(t); doEdit(t); }, [doEdit]));
   const mcp = site.mcp_url;
@@ -106,35 +180,50 @@ function SiteDetail({ site, lang, onChanged }: { site: SiteSummary; lang: Lang; 
         </Card>
 
         <Card>
-          <Eyebrow>Bolkar website badlo</Eyebrow>
-          <p className="text-sm text-muted">Jaise: “Aam ke achaar ka price 280 kar do” ya “Naya product jodo: lahsun ka achaar ₹240”.</p>
+          <Eyebrow>{tx(lang, "Bolkar website badlo", "Change website")}</Eyebrow>
+          <p className="text-sm text-muted">{tx(lang, "Jaise: “Aam ke achaar ka price 280 kar do”, “Mera WhatsApp number 98XXXXXXXX hai” ya “Naya product jodo: lahsun ka achaar ₹240”.", "For example: “Set the mango pickle price to 280”, “My WhatsApp number is 98XXXXXXXX” or “Add a product: garlic pickle ₹240”.")}</p>
           <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); doEdit(instruction); }}>
-            <input value={voice.listening ? voice.interim : instruction} onChange={(e) => setInstruction(e.target.value)} placeholder={voice.listening ? "Sun rahi hoon…" : "Kya badalna hai?"}
+            <input ref={editRef} value={voice.listening ? voice.interim : instruction} onChange={(e) => setInstruction(e.target.value)} placeholder={voice.listening ? tx(lang, "Sun rahi hoon…", "Listening…") : tx(lang, "Kya badalna hai?", "What should change?")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border border-line px-3 text-[15px] focus:border-plum-600 focus:outline-none focus:ring-4 focus:ring-plum-100" />
             <button type="button" onClick={voice.listening ? voice.stop : voice.start} aria-label="Bolkar batayein"
               className={`grid size-11 place-items-center rounded-xl text-white ${voice.listening ? "bg-rose" : "bg-plum-700"}`}><Icon name="mic" /></button>
-            <Button type="submit" loading={editing} disabled={!instruction.trim()}>Badlo</Button>
+            <Button type="submit" loading={editing} disabled={!instruction.trim()}>{tx(lang, "Badlo", "Change")}</Button>
           </form>
           {voice.error && <div className="mt-2"><Notice tone="warn">{voice.error}</Notice></div>}
           {editing && <div className="skeleton mt-3 h-10 rounded-xl" />}
           {editResult && <div className="mt-3"><Notice tone={editResult.ok ? "info" : "warn"}>{editResult.text}</Notice></div>}
         </Card>
-        <AssistantCard slug={site.slug} onDone={bump} />
+
+        <Card>
+          <div id="photos" className="scroll-mt-24" />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <Eyebrow>{tx(lang, "Apni photos", "Your photos")}</Eyebrow>
+              <p className="text-sm text-muted">{tx(lang, "Apne products ki asli photos lijiye — Saheli unhe pehchaan kar website par laga degi.", "Take real photos of your products — Saheli recognises them and puts them on your website.")}</p>
+            </div>
+            <Button icon="camera" loading={photoBusy === "reading"} onClick={() => fileRef.current?.click()} disabled={!!photoBusy}>{tx(lang, "Photos jodo", "Add photos")}</Button>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(ev) => onPhotos(ev.target.files)} />
+          {photoBusy === "reading" && <p className="mt-3 text-sm text-muted">{tx(lang, "Aapke products dekh rahi hoon…", "Looking at your photos…")}</p>}
+          {photoMsg && <div className="mt-3"><Notice tone={photoMsg.ok ? "info" : "warn"}>{photoMsg.text}</Notice></div>}
+          {photoItems && <div className="mt-3"><CatalogReview items={photoItems} lang={lang} busy={photoBusy === "saving"} onDone={savePhotos} action={tx(lang, "Website par lagao", "Put on my website")} /></div>}
+        </Card>
+        <AssistantCard slug={site.slug} lang={lang} onDone={bump} />
       </div>
 
       <div className="space-y-4">
-        <OrdersCard slug={site.slug} onChanged={bump} />
-        <ReadinessCard slug={site.slug} version={version} onChanged={bump} />
+        <OrdersCard slug={site.slug} lang={lang} onChanged={bump} />
+        <ReadinessCard slug={site.slug} lang={lang} version={version} onChanged={bump} onStep={onStep} />
         <Card>
           <div className="flex items-center justify-between gap-2">
             <div><Eyebrow tone="saffron">Enquiries</Eyebrow><p className="font-display text-2xl">{enquiries?.length ?? "–"}</p></div>
-            <Button variant="secondary" icon="speaker" loading={loadingSummary} onClick={listen}>Summary suno</Button>
+            <Button variant="secondary" icon="speaker" loading={loadingSummary} onClick={listen}>{tx(lang, "Summary suno", "Hear summary")}</Button>
           </div>
           {summary && <div className="mt-3 rounded-xl bg-saffron-50 p-3 text-sm"><p>{summary.text}</p>{summary.next_action && <p className="mt-1 font-semibold">→ {summary.next_action}</p>}</div>}
           {err && <div className="mt-3"><Notice tone="error">{err}</Notice></div>}
           <ul className="mt-3 divide-y divide-line">
             {enquiries === null && [0, 1].map((k) => <li key={k} className="skeleton my-2 h-14 rounded-xl" />)}
-            {enquiries?.length === 0 && <li className="py-6 text-center text-sm text-muted">Abhi koi enquiry nahi. Website ka link WhatsApp status par lagaiye!</li>}
+            {enquiries?.length === 0 && <li className="py-6 text-center text-sm text-muted">{tx(lang, "Abhi koi enquiry nahi. Website ka link WhatsApp status par lagaiye!", "No enquiries yet. Put your website link on your WhatsApp status!")}</li>}
             {enquiries?.slice(0, 8).map((q, i) => (
               <li key={i} className="py-3">
                 <div className="flex items-center gap-2"><b className="text-sm">{q.name}</b>{q.channel === "agent" && <Pill tone="plum"><Icon name="bot" className="size-3" />AI agent</Pill>}
@@ -152,14 +241,14 @@ function SiteDetail({ site, lang, onChanged }: { site: SiteSummary; lang: Lang; 
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-plum-50 text-plum-700"><Icon name="bot" /></span>
             <div className="min-w-0">
               <Eyebrow>AI-agent ready</Eyebrow>
-              <p className="text-sm text-muted">Customers ke AI assistants (Claude, ChatGPT) bhi aapke products dekh kar order bhej sakte hain.</p>
+              <p className="text-sm text-muted">{tx(lang, "Customers ke AI assistants (Claude, ChatGPT) bhi aapke products dekh kar order bhej sakte hain.", "Customers' AI assistants (Claude, ChatGPT) can also see your products and send orders.")}</p>
             </div>
           </div>
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-cream px-3 py-2">
             <code className="flex-1 truncate text-xs">{mcp}</code>
             <button onClick={() => navigator.clipboard?.writeText(mcp).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })} className="text-plum-700" aria-label="Copy MCP URL"><Icon name={copied ? "check" : "copy"} className="size-4" /></button>
           </div>
-          <a href={`${site.url}.well-known/agent-card.json`} target="_blank" rel="noopener" className="mt-2 inline-block text-xs font-semibold text-plum-700 hover:underline">Agent card dekhein →</a>
+          <a href={`${site.url}.well-known/agent-card.json`} target="_blank" rel="noopener" className="mt-2 inline-block text-xs font-semibold text-plum-700 hover:underline">{tx(lang, "Agent card dekhein", "View agent card")} →</a>
         </Card>
       </div>
     </div>
@@ -167,23 +256,21 @@ function SiteDetail({ site, lang, onChanged }: { site: SiteSummary; lang: Lang; 
 }
 
 /* ---------- launch readiness: computed on the server from completed work only ---------- */
-function ReadinessCard({ slug, version, onChanged }: { slug: string; version: number; onChanged: () => void }) {
+function ReadinessCard({ slug, lang, version, onChanged, onStep }: { slug: string; lang: Lang; version: number; onChanged: () => void; onStep: (action: string | null, tip: string | null) => void }) {
   const [r, setR] = useState<Readiness | null>(null);
   const [err, setErr] = useState<string>();
   const [verifying, setVerifying] = useState(false);
   const [open, setOpen] = useState(false);
-  useEffect(() => { api.readiness(slug).then(setR).catch((e) => setErr(e.message)); }, [slug, version]);
+  useEffect(() => { api.readiness(slug, lang).then(setR).catch((e) => setErr(e.message)); }, [slug, version, lang]);
 
   async function verify() {
     setVerifying(true); setErr(undefined);
-    try { const v = await api.verify(slug); if (!v.ok) setErr(`Website ne jawab nahi diya (${v.status ?? v.error ?? "no response"})`); onChanged(); }
+    try { const v = await api.verify(slug); if (!v.ok) setErr(`${tx(lang, "Website ne jawab nahi diya", "The website didn't respond")} (${v.status ?? v.error ?? "no response"})`); onChanged(); }
     catch (e) { setErr((e as Error).message); }
     finally { setVerifying(false); }
   }
-  const act = (a: string | null) => {
-    if (a === "verify") verify();
-    else if (a === "assist") document.getElementById("assistant")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const ACT: Record<string, [string, string]> = { verify: ["Check karo", "Check"], assist: ["Banao", "Create"], photos: ["Photos jodo", "Add photos"], edit: ["Abhi karo", "Do it"], share: ["Share", "Share"] };
+  const act = (a: string | null, tip: string | null) => (a === "verify" ? verify() : onStep(a, tip));
 
   if (!r) return <Card>{err ? <Notice tone="error">{err}</Notice> : <div className="flex items-center gap-4"><div className="skeleton size-24 rounded-full" /><div className="skeleton h-16 flex-1 rounded-xl" /></div>}</Card>;
   return (
@@ -192,28 +279,28 @@ function ReadinessCard({ slug, version, onChanged }: { slug: string; version: nu
         <ScoreRing value={r.score} size={92} />
         <div className="min-w-0 flex-1">
           <Eyebrow tone="leaf">Launch readiness</Eyebrow>
-          <p className="text-sm">{r.message ?? "Sirf poore hue kaamon se gina gaya — koi andaza nahi."}</p>
-          <p className="text-xs text-muted">Sirf asli checks se gina gaya — koi andaza nahi.</p>
+          <p className="text-sm">{r.message}</p>
+          <p className="text-xs text-muted">{tx(lang, "Sirf asli checks se gina gaya — koi andaza nahi.", "Counted only from real checks — no guesses.")}</p>
           <button onClick={verify} disabled={verifying} className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-plum-700 hover:underline disabled:opacity-60">
-            <Icon name="refresh" className={`size-3.5 ${verifying ? "animate-spin" : ""}`} />{verifying ? "Check ho raha hai…" : "Abhi live check karo"}</button>
+            <Icon name="refresh" className={`size-3.5 ${verifying ? "animate-spin" : ""}`} />{verifying ? tx(lang, "Check ho raha hai…", "Checking…") : tx(lang, "Abhi live check karo", "Run live check")}</button>
         </div>
       </div>
       {err && <div className="mt-3"><Notice tone="warn">{err}</Notice></div>}
       {r.next_steps.length > 0 && (
         <div className="mt-4">
-          <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Agle kadam</p>
+          <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">{tx(lang, "Agle kadam", "Next steps")}</p>
           <ul className="mt-2 space-y-2">
             {r.next_steps.map((n) => (
               <li key={n.label} className="flex items-start gap-3 rounded-xl bg-cream/70 p-3">
                 <span className="mt-0.5 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold text-plum-700">+{n.points}</span>
                 <span className="min-w-0 flex-1 text-sm"><b className="block">{n.label}</b>{n.tip && <span className="text-muted">{n.tip}</span>}</span>
-                {(n.action === "verify" || n.action === "assist") && <button onClick={() => act(n.action)} className="shrink-0 text-xs font-semibold text-plum-700 hover:underline">{n.action === "verify" ? "Check" : "Banao"} →</button>}
+                {n.action && ACT[n.action] && <button onClick={() => act(n.action, n.tip)} className="shrink-0 self-center whitespace-nowrap rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-plum-700 shadow-card hover:bg-plum-50">{tx(lang, ...ACT[n.action])}</button>}
               </li>
             ))}
           </ul>
         </div>
       )}
-      <button onClick={() => setOpen((o) => !o)} className="mt-3 text-xs font-semibold text-muted hover:text-plum-700" aria-expanded={open}>{open ? "Kam dikhao" : "Poora breakdown"}</button>
+      <button onClick={() => setOpen((o) => !o)} className="mt-3 text-xs font-semibold text-muted hover:text-plum-700" aria-expanded={open}>{open ? tx(lang, "Kam dikhao", "Show less") : tx(lang, "Poora breakdown", "Full breakdown")}</button>
       {open && (
         <div className="mt-3 space-y-3">
           {r.sections.map((s) => (
@@ -240,7 +327,7 @@ const TASKS: { id: AssistTask; label: string; icon: string }[] = [
   { id: "improve", label: "Improve my website", icon: "trend" },
 ];
 
-function AssistantCard({ slug, onDone }: { slug: string; onDone: () => void }) {
+function AssistantCard({ slug, lang, onDone }: { slug: string; lang: Lang; onDone: () => void }) {
   const [out, setOut] = useState<{ task: string; output: AssistOutput } | null>(null);
   const [history, setHistory] = useState<{ task: string; output: AssistOutput; created_at: string }[]>([]);
   const [busy, setBusy] = useState<AssistTask | null>(null);
@@ -266,7 +353,7 @@ function AssistantCard({ slug, onDone }: { slug: string; onDone: () => void }) {
     <Card>
       <div id="assistant" className="scroll-mt-24" />
       <Eyebrow tone="saffron">Business assistant</Eyebrow>
-      <p className="text-sm text-muted">Launch ke baad ka kaam — posts, offers, customer messages. Aapki website ki asli jaankari se likha jaata hai.</p>
+      <p className="text-sm text-muted">{tx(lang, "Launch ke baad ka kaam — posts, offers, customer messages. Aapki website ki asli jaankari se likha jaata hai.", "After-launch work — posts, offers, customer messages. Written from your website's real details.")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {TASKS.map((t) => (
           <button key={t.id} onClick={() => run(t.id)} disabled={!!busy}
@@ -275,9 +362,9 @@ function AssistantCard({ slug, onDone }: { slug: string; onDone: () => void }) {
         ))}
       </div>
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (custom.trim()) run("custom", custom); }}>
-        <input value={custom} onChange={(e) => setCustom(e.target.value)} maxLength={600} placeholder="Ya kuch aur maangiye — jaise “Diwali banner ka text”"
+        <input value={custom} onChange={(e) => setCustom(e.target.value)} maxLength={600} placeholder={tx(lang, "Ya kuch aur maangiye — jaise “Diwali banner ka text”", "Or ask for something else — e.g. “Diwali banner text”")}
           className="min-h-11 min-w-0 flex-1 rounded-xl border border-line px-3 text-[15px] focus:border-plum-600 focus:outline-none focus:ring-4 focus:ring-plum-100" />
-        <Button type="submit" variant="secondary" loading={busy === "custom"} disabled={!custom.trim() || !!busy}>Likho</Button>
+        <Button type="submit" variant="secondary" loading={busy === "custom"} disabled={!custom.trim() || !!busy}>{tx(lang, "Likho", "Write")}</Button>
       </form>
       {err && <div className="mt-3"><Notice tone="error">{err}</Notice></div>}
       {busy && <div className="mt-3 space-y-2"><div className="skeleton h-16 rounded-xl" /><div className="skeleton h-16 rounded-xl" /></div>}
@@ -298,7 +385,7 @@ function AssistantCard({ slug, onDone }: { slug: string; onDone: () => void }) {
       )}
       {history.length > (out ? 1 : 0) && (
         <details className="mt-3 text-sm">
-          <summary className="cursor-pointer text-xs font-semibold text-muted hover:text-plum-700">Pehle banaya hua ({history.length - (out ? 1 : 0)})</summary>
+          <summary className="cursor-pointer text-xs font-semibold text-muted hover:text-plum-700">{tx(lang, "Pehle banaya hua", "Made earlier")} ({history.length - (out ? 1 : 0)})</summary>
           <ul className="mt-2 space-y-1">
             {history.slice(out ? 1 : 0, 10).map((h, i) => (
               <li key={i}><button onClick={() => setOut({ task: h.task, output: h.output })} className="w-full truncate rounded-lg px-2 py-1.5 text-left hover:bg-plum-50">{h.output.title}
@@ -315,7 +402,7 @@ function AssistantCard({ slug, onDone }: { slug: string; onDone: () => void }) {
 const rupees = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const STATUS_LABEL: Record<Order["status"], string> = { new: "Naya", confirmed: "Confirm", delivered: "Deliver ho gaya", cancelled: "Cancel" };
 
-function OrdersCard({ slug, onChanged }: { slug: string; onChanged: () => void }) {
+function OrdersCard({ slug, lang, onChanged }: { slug: string; lang: Lang; onChanged: () => void }) {
   const [data, setData] = useState<{ orders: Order[]; stats: OrderStats } | null>(null);
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState<number | null>(null);
@@ -341,13 +428,13 @@ function OrdersCard({ slug, onChanged }: { slug: string; onChanged: () => void }
       <div className="flex items-end justify-between gap-3">
         <div><Eyebrow tone="leaf">Orders</Eyebrow><p className="font-display text-2xl">{data ? data.stats.count : "–"}</p></div>
         {data && data.stats.count > 0 && <div className="text-right text-xs text-muted">
-          <p><b className="text-ink">{rupees(data.stats.order_value)}</b> kul orders</p>
-          <p><b className="text-leaf">{rupees(data.stats.paid_total)}</b> payment mili</p></div>}
+          <p><b className="text-ink">{rupees(data.stats.order_value)}</b> {tx(lang, "kul orders", "total orders")}</p>
+          <p><b className="text-leaf">{rupees(data.stats.paid_total)}</b> {tx(lang, "payment mili", "received")}</p></div>}
       </div>
       {err && <div className="mt-3"><Notice tone="error">{err}</Notice></div>}
       <ul className="mt-3 divide-y divide-line">
         {!data && !err && [0, 1].map((k) => <li key={k} className="skeleton my-2 h-14 rounded-xl" />)}
-        {data?.orders.length === 0 && <li className="py-6 text-center text-sm text-muted">Abhi koi order nahi. Jab customer website par order karega, wo yahan aur aapke email par aayega.</li>}
+        {data?.orders.length === 0 && <li className="py-6 text-center text-sm text-muted">{tx(lang, "Abhi koi order nahi. Jab customer website par order karega, wo yahan aur aapke email par aayega.", "No orders yet. When a customer orders on your website, it shows here and in your email.")}</li>}
         {data?.orders.slice(0, 12).map((o) => (
           <li key={o.id} className="py-3">
             <button className="flex w-full items-center gap-2 text-left" onClick={() => setOpen(open === o.id ? null : o.id)} aria-expanded={open === o.id}>

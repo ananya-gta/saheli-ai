@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { getDrill, setDrill } from "../api";
-import type { ActivityItem, Approval, BuildResult, CatalogItem, DomainOption, GrowthPlan, Profile } from "../types";
+import type { ActivityItem, Approval, BuildResult, CatalogItem, DomainOption, GrowthPlan, Lang, Profile } from "../types";
+import { tx } from "../lib/i18n";
 import { Icon } from "./Icon";
 import { ScaledFrame } from "./ScaledFrame";
 import { Button, Card, Eyebrow, Notice, Pill, ScoreRing } from "./ui";
@@ -11,16 +12,16 @@ const CATEGORY_LABEL: Record<string, string> = {
   boutique: "Boutique", handicraft: "Handicraft", services: "Services", other: "Business",
 };
 
-/* ---------- profile confirmation ---------- */
-export function ProfileCard({ profile, onConfirm, onChange, compact, confirmed }: { profile: Profile; onConfirm: () => void; onChange: () => void; compact?: boolean; confirmed?: boolean }) {
+/* ---------- her details, shown once right before she approves the website ---------- */
+export function ProfileCard({ profile, compact, lang = "hi" }: { profile: Profile; compact?: boolean; lang?: Lang }) {
   const products = profile.products ?? [];
   const pay = (profile.payment_methods ?? []).map((m) => ({ upi: "UPI", cod: "Cash on delivery", cash: "Cash", card: "Card" } as Record<string, string>)[m] ?? m);
   return (
     <Card>
-      <Eyebrow>Aapka business profile</Eyebrow>
+      <Eyebrow>{tx(lang, "Website par ye jaankari jayegi", "This goes on your website")}</Eyebrow>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-display text-xl leading-tight">{profile.business_name || `${profile.owner_name ?? "Aapka"} business`}</h3>
+        <div className="min-w-0">
+          <h3 className="break-words font-display text-xl leading-tight">{profile.business_name || `${profile.owner_name ?? "Aapka"} business`}</h3>
           <p className="mt-0.5 text-sm text-muted">{CATEGORY_LABEL[profile.category ?? "other"]}{profile.city ? ` · ${profile.city}` : ""}</p>
         </div>
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-plum-50 text-plum-700"><Icon name="store" /></span>
@@ -37,20 +38,13 @@ export function ProfileCard({ profile, onConfirm, onChange, compact, confirmed }
             <div key={i} className="flex items-center gap-3 px-3 py-2">
               {p.photo_id ? <img src={api.photoUrl(p.photo_id)} alt="" className="size-9 rounded-lg object-cover" /> :
                 <span className="grid size-9 place-items-center rounded-lg bg-cream text-muted"><Icon name="store" className="size-4" /></span>}
-              <span className="flex-1 truncate text-sm font-medium">{p.name}</span>
-              <span className="text-sm text-muted">{p.price_inr ? `₹${p.price_inr}` : "—"}{p.unit ? ` / ${p.unit}` : ""}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
+              <span className="shrink-0 whitespace-nowrap text-sm text-muted">{p.price_inr ? `₹${p.price_inr}` : "—"}{p.unit ? ` / ${p.unit}` : ""}</span>
             </div>
           ))}
         </div>
       )}
-      {confirmed ? (
-        <p className="mt-4 flex items-center gap-1.5 text-sm font-medium text-leaf"><Icon name="check" className="size-4" />Confirm ho gaya — kuch badalna ho to bas boliye</p>
-      ) : (
-        <div className="mt-4 flex gap-2">
-          <Button className="flex-1" icon="check" onClick={onConfirm}>Haan, sahi hai</Button>
-          <Button variant="secondary" onClick={onChange}>Badlo</Button>
-        </div>
-      )}
+      <p className="mt-3 text-xs text-muted">{tx(lang, "Kuch galat hai? Bas likhiye ya boliye — Saheli theek kar degi.", "Something wrong? Just type or say it — Saheli will fix it.")}</p>
     </Card>
   );
 }
@@ -65,40 +59,42 @@ function Field({ icon, label, value }: { icon: string; label: string; value: str
 }
 
 /* ---------- domain suggestions (real GoDaddy data) ---------- */
-export function DomainCards({ domains, onPick }: { domains: DomainOption[]; onPick: (d: string) => void }) {
+export function DomainCards({ domains, onPick, lang = "hi" }: { domains: DomainOption[]; onPick: (d: string) => void; lang?: Lang }) {
   const list = domains.filter((d) => d.domain).slice(0, 5);
   if (!list.length) return null;
   return (
     <Card>
-      <div className="flex items-center justify-between">
-        <Eyebrow>Naam aur domain</Eyebrow>
-        <Pill tone="leaf"><Icon name="check" className="size-3.5" />GoDaddy se live check</Pill>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Eyebrow>{tx(lang, "Naam aur domain", "Name and domain")}</Eyebrow>
+        <Pill tone="leaf"><Icon name="check" className="size-3.5" />{tx(lang, "GoDaddy se live check", "Live from GoDaddy")}</Pill>
       </div>
-      <p className="mb-3 text-sm text-muted">Domain = aapki online dukaan ka pata. Aapki website pehle <b>free Saheli address</b> par banegi. Apna .com optional hai — ye abhi khareede nahi gaye hain.</p>
+      <p className="mb-3 text-sm text-muted">{lang === "en"
+        ? <>A domain is your shop's online address. Your website starts on a <b>free Saheli address</b>. Your own .com is optional — nothing has been bought.</>
+        : <>Domain = aapki online dukaan ka pata. Aapki website pehle <b>free Saheli address</b> par banegi. Apna .com optional hai — ye abhi khareede nahi gaye hain.</>}</p>
       <div className="grid gap-2">
         {list.map((d) => (
           <button key={d.domain} onClick={() => d.available && onPick(d.domain)} disabled={!d.available}
             className="group flex items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-left transition hover:border-plum-600/50 hover:bg-plum-50 disabled:opacity-60">
-            <Icon name="globe" className="size-5 text-plum-600" />
-            <span className="flex-1 font-semibold">{d.domain}</span>
+            <Icon name="globe" className="size-5 shrink-0 text-plum-600" />
+            <span className="min-w-0 flex-1 break-all font-semibold leading-snug">{d.domain}</span>
             {d.available ? (
-              <span className="text-right text-sm">
+              <span className="shrink-0 whitespace-nowrap text-right text-sm">
                 <span className="font-semibold">{d.price ? `$${d.price.amount}` : ""}</span>
-                {d.price?.approx_inr ? <span className="block text-xs text-muted">≈ ₹{d.price.approx_inr.toLocaleString("en-IN")}/saal</span> : null}
+                {d.price?.approx_inr ? <span className="block text-xs text-muted">≈ ₹{d.price.approx_inr.toLocaleString("en-IN")}/{tx(lang, "saal", "yr")}</span> : null}
               </span>
-            ) : <Pill>Taken</Pill>}
-            {d.available && <Icon name="arrow" className="size-4 text-muted transition group-hover:translate-x-0.5" />}
+            ) : <Pill>{tx(lang, "Le liya gaya", "Taken")}</Pill>}
+            {d.available && <Icon name="arrow" className="size-4 shrink-0 text-muted transition group-hover:translate-x-0.5" />}
           </button>
         ))}
       </div>
-      <p className="mt-3 text-xs text-muted">Daam GoDaddy ka pehle saal ka daam hai (renewal alag ho sakta hai). Saheli khud domain nahi khareedti — chahein to
-        {" "}<a className="font-semibold text-plum-700 underline" href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(list.find((d) => d.available)?.domain ?? list[0].domain)}`} target="_blank" rel="noopener">GoDaddy par khud dekh kar khareed sakti hain</a>.</p>
+      <p className="mt-3 text-xs text-muted">{tx(lang, "Daam GoDaddy ka pehle saal ka hai (renewal alag ho sakta hai). Saheli khud domain nahi khareedti — chahein to", "Prices are GoDaddy's first-year prices (renewal may differ). Saheli never buys a domain itself — if you like, you can")}
+        {" "}<a className="font-semibold text-plum-700 underline" href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(list.find((d) => d.available)?.domain ?? list[0].domain)}`} target="_blank" rel="noopener">{tx(lang, "GoDaddy par khud dekh kar khareed sakti hain", "check and buy it on GoDaddy yourself")}</a>.</p>
     </Card>
   );
 }
 
 /* ---------- photo -> catalog review ---------- */
-export function CatalogReview({ items, onDone, done }: { items: CatalogItem[]; onDone: (rows: { name: string; price_inr?: number; unit?: string; photo_id: string; category: string }[]) => void; done?: boolean }) {
+export function CatalogReview({ items, onDone, done, lang = "hi", busy = false, action }: { items: CatalogItem[]; onDone: (rows: { name: string; price_inr?: number; unit?: string; photo_id: string; category: string; description?: string }[]) => void; done?: boolean; lang?: Lang; busy?: boolean; action?: string }) {
   const [rows, setRows] = useState(() => items.map((it) => ({ ...it, price: "", unit: it.unit_guess ?? "" })));
   const [touched, setTouched] = useState(false);
   const missing = rows.filter((r) => !r.price.trim() || isNaN(Number(r.price)));
@@ -106,8 +102,8 @@ export function CatalogReview({ items, onDone, done }: { items: CatalogItem[]; o
 
   return (
     <Card tone="accent">
-      <Eyebrow tone="saffron">Photos se catalog</Eyebrow>
-      <h3 className="font-display text-lg">Aapke products bahut acche hain! Maine {rows.length} pehchaane — bas daam daal dijiye</h3>
+      <Eyebrow tone="saffron">{tx(lang, "Photos se catalog", "Catalog from photos")}</Eyebrow>
+      <h3 className="font-display text-lg">{tx(lang, `Aapke products bahut acche hain! Maine ${rows.length} pehchaane — bas daam daal dijiye`, `Your products look lovely! I found ${rows.length} — just add the prices`)}</h3>
       <div className="mt-3 grid gap-3">
         {rows.map((r, i) => (
           <div key={r.photo_id + i} className="flex gap-3 rounded-xl border border-line p-2.5">
@@ -130,15 +126,15 @@ export function CatalogReview({ items, onDone, done }: { items: CatalogItem[]; o
           </div>
         ))}
       </div>
-      {touched && missing.length > 0 && <div className="mt-3"><Notice tone="warn">Har product ka price daaliye (sirf number).</Notice></div>}
+      {touched && missing.length > 0 && <div className="mt-3"><Notice tone="warn">{tx(lang, "Har product ka price daaliye (sirf number).", "Add a price for every product (numbers only).")}</Notice></div>}
       {!done && (
-        <Button className="mt-4 w-full" icon="check" onClick={() => {
+        <Button className="mt-4 w-full" icon="check" loading={busy} onClick={() => {
           setTouched(true);
           if (missing.length) return;
-          onDone(rows.map((r) => ({ name: r.name.trim(), price_inr: Number(r.price), unit: r.unit.trim() || undefined, photo_id: r.photo_id, category: r.category })));
-        }}>Meri dukaan mein jodo</Button>
+          onDone(rows.map((r) => ({ name: r.name.trim(), price_inr: Number(r.price), unit: r.unit.trim() || undefined, photo_id: r.photo_id, category: r.category, description: r.description })));
+        }}>{action ?? tx(lang, "Meri dukaan mein jodo", "Add to my shop")}</Button>
       )}
-      {done && <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-leaf"><Icon name="check" className="size-4" />Products jud gaye</p>}
+      {done && <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-leaf"><Icon name="check" className="size-4" />{tx(lang, "Products jud gaye", "Products added")}</p>}
     </Card>
   );
 }
@@ -152,8 +148,8 @@ const BUILD_STAGES = [
   { t: "Online kar rahi hoon", d: "Secure link (HTTPS)" },
 ];
 
-export function ApprovalCard({ approval, status, onApprove, onDecline, error }: {
-  approval: Approval; status: "pending" | "building" | "done" | "declined"; onApprove: () => void; onDecline: () => void; error?: string;
+export function ApprovalCard({ approval, status, onApprove, onDecline, error, lang = "hi" }: {
+  approval: Approval; status: "pending" | "building" | "done" | "declined"; onApprove: () => void; onDecline: () => void; error?: string; lang?: Lang;
 }) {
   const [stage, setStage] = useState(0);
   useEffect(() => {
@@ -165,7 +161,7 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error }: 
   if (status === "building") {
     return (
       <Card>
-        <Eyebrow>Website ban rahi hai</Eyebrow>
+        <Eyebrow>{tx(lang, "Website ban rahi hai", "Building your website")}</Eyebrow>
         <ol className="mt-2 space-y-3">
           {BUILD_STAGES.map((s, i) => (
             <li key={s.t} className="flex gap-3">
@@ -181,32 +177,32 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error }: 
           ))}
         </ol>
         <div className="skeleton mt-4 h-28 rounded-xl" aria-hidden="true" />
-        <p className="mt-2 text-xs text-muted">Isme 30–60 second lagte hain.</p>
+        <p className="mt-2 text-xs text-muted">{tx(lang, "Isme 30–60 second lagte hain.", "This takes 30–60 seconds.")}</p>
       </Card>
     );
   }
 
   return (
     <Card tone="accent">
-      <Eyebrow tone="saffron">Aapki manzoori chahiye</Eyebrow>
-      <h3 className="font-display text-xl leading-snug">{approval.business_name} ki website banayein?</h3>
+      <Eyebrow tone="saffron">{tx(lang, "Aapki manzoori chahiye", "Your approval")}</Eyebrow>
+      <h3 className="font-display text-xl leading-snug">{tx(lang, `${approval.business_name} ki website banayein?`, `Build the website for ${approval.business_name}?`)}</h3>
       <div className="mt-3 flex items-center gap-2 rounded-xl bg-plum-50 px-3 py-2.5 font-mono text-[13.5px] text-plum-700">
-        <Icon name="globe" className="size-4 shrink-0" /><span className="truncate">{approval.slug}.saheliai.com</span>
+        <Icon name="globe" className="size-4 shrink-0" /><span className="min-w-0 break-all">{approval.slug}.saheliai.com</span>
       </div>
       <table className="mt-4 w-full text-sm">
         <tbody className="divide-y divide-line">
           {[["Website design + content", "Free"], ["Hosting & secure link (HTTPS)", "Free"], ["Enquiry form → email", "Free"], ["WhatsApp & UPI ordering", "Free"]].map(([k, v]) => (
             <tr key={k}><td className="py-2 text-muted">{k}</td><td className="py-2 text-right font-medium">{v}</td></tr>
           ))}
-          <tr><td className="pt-3 font-semibold">Aaj ka kharcha</td><td className="pt-3 text-right font-display text-xl font-semibold text-leaf">₹0</td></tr>
+          <tr><td className="pt-3 font-semibold">{tx(lang, "Aaj ka kharcha", "Cost today")}</td><td className="pt-3 text-right font-display text-xl font-semibold text-leaf">₹0</td></tr>
         </tbody>
       </table>
-      <p className="mt-3 text-xs text-muted">Apna .com domain (lagbhag ₹1,100/saal) baad mein — sirf aapki alag manzoori se. Kuch bhi apne aap nahi khareeda jaayega.</p>
+      <p className="mt-3 text-xs text-muted">{tx(lang, "Apna .com domain (lagbhag ₹1,100/saal) baad mein — sirf aapki alag manzoori se. Kuch bhi apne aap nahi khareeda jaayega.", "Your own .com (about ₹1,100/yr) can come later — only with your separate approval. Nothing is bought automatically.")}</p>
       {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
-      {status === "declined" ? <p className="mt-4 text-sm text-muted">Theek hai — naya naam chuniye.</p> : (
+      {status === "declined" ? <p className="mt-4 text-sm text-muted">{tx(lang, "Theek hai — naya naam chuniye.", "Okay — pick a new name.")}</p> : (
         <div className="mt-4 flex gap-2">
-          <Button className="flex-1" icon="check" onClick={onApprove}>Haan, banao</Button>
-          <Button variant="secondary" onClick={onDecline}>Naam badlo</Button>
+          <Button className="flex-1" icon="check" onClick={onApprove}>{tx(lang, "Haan, banao", "Yes, build it")}</Button>
+          <Button variant="secondary" onClick={onDecline}>{tx(lang, "Naam badlo", "Change name")}</Button>
         </div>
       )}
     </Card>
@@ -214,7 +210,7 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error }: 
 }
 
 /* ---------- success ---------- */
-export function SuccessCard({ site, onDashboard }: { site: BuildResult; onDashboard: () => void }) {
+export function SuccessCard({ site, onDashboard, lang = "hi" }: { site: BuildResult; onDashboard: () => void; lang?: Lang }) {
   const share = `Namaste! Ab aap ${site.content.business_name} ko online dekh sakte hain: ${site.url}`;
   const [copied, setCopied] = useState(false);
   return (
@@ -225,7 +221,7 @@ export function SuccessCard({ site, onDashboard }: { site: BuildResult; onDashbo
         <span className="absolute left-3 top-3"><Pill tone="leaf"><span className="size-1.5 rounded-full bg-leaf" />Live</Pill></span>
       </div>
       <div className="p-4 sm:p-5">
-        <Eyebrow tone="leaf">Badhai ho! Aapki dukaan online hai</Eyebrow>
+        <Eyebrow tone="leaf">{tx(lang, "Badhai ho! Aapki dukaan online hai", "Congratulations! Your shop is online")}</Eyebrow>
         <h3 className="font-display text-2xl leading-tight">{site.content.business_name}</h3>
         <p className="text-sm text-muted">{site.content.tagline_en}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -235,9 +231,9 @@ export function SuccessCard({ site, onDashboard }: { site: BuildResult; onDashbo
         </div>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <a href={site.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-plum-700 px-4 font-semibold text-ivory shadow-lift hover:bg-plum-800">
-            <Icon name="external" className="size-[18px]" />Website kholo</a>
+            <Icon name="external" className="size-[18px]" />{tx(lang, "Website kholo", "Open website")}</a>
           <a href={`https://wa.me/?text=${encodeURIComponent(share)}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1E9E57] px-4 font-semibold text-white hover:bg-[#188A4B]">
-            <Icon name="whatsapp" className="size-[18px]" />WhatsApp par share</a>
+            <Icon name="whatsapp" className="size-[18px]" />{tx(lang, "WhatsApp par share", "Share on WhatsApp")}</a>
         </div>
         <div className="mt-2 flex gap-2">
           <Button variant="secondary" className="flex-1" icon={copied ? "check" : "copy"} onClick={() => { navigator.clipboard?.writeText(site.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }}>{copied ? "Copied" : "Link copy"}</Button>

@@ -79,3 +79,35 @@ def test_ai_edit_output_is_validated_before_it_reaches_the_site(slug):
     pickle, lemon = out["products"]
     assert "price_inr" not in pickle and pickle["photo_id"] == "a" * 16   # negative price dropped, own photo kept
     assert lemon["price_inr"] == 180 and "photo_id" not in lemon         # AI can't attach a photo she never uploaded
+
+
+def test_dashboard_photo_replaces_stock_image_and_adds_new_products(monkeypatch):
+    from app import editor, images, sitestore
+    sitestore.save("photo-shop", {"content": {"business_name": "x", "archetype": "bakery",
+                                              "products": [{"name": "Cake", "description": "d", "price_inr": 300}]},
+                                  "profile": {"products": [{"name": "Cake", "price_inr": 300}]},
+                                  "images": {"p0": [{"src": "stock.jpg", "owner": False}]}})
+    monkeypatch.setattr(images, "owner_photo", lambda pid, folder, name, orient: {"src": f"{pid}.jpg", "owner": True})
+    monkeypatch.setattr(images, "fill_slot", lambda *a, **k: [])
+    monkeypatch.setattr(editor, "_save_and_render", lambda slug, data: sitestore.save(slug, data))
+    r = editor.add_photos("photo-shop", [{"name": "cake", "photo_id": "a1"}, {"name": "Cookies", "photo_id": "b2", "price_inr": 150}])
+    data = sitestore.load("photo-shop")
+    assert r["ok"] and data["images"]["p0"][0]["src"] == "a1.jpg" and data["images"]["p1"][0]["src"] == "b2.jpg"
+    assert [p["name"] for p in data["content"]["products"]] == ["Cake", "Cookies"]
+    assert data["profile"]["products"][1] == {"name": "Cookies", "price_inr": 150.0, "photo_id": "b2"}
+
+
+def test_contact_details_from_an_edit_are_checked_before_use():
+    from app import editor
+    good = editor._validated_profile({"whatsapp": "+91 98765-43210", "upi_id": "asha@okaxis", "delivery_area": "Jaipur"})
+    assert good["whatsapp"] == "919876543210" and good["upi_id"] == "asha@okaxis"
+    bad = editor._validated_profile({"whatsapp": "12345", "upi_id": "not a upi"})
+    assert bad == {}
+
+
+def test_readiness_speaks_the_dashboard_language():
+    from app import launch, sitestore
+    sitestore.save("lang-shop", {"content": {"business_name": "x", "archetype": "bakery", "products": []}, "profile": {}, "images": {}})
+    en = launch.readiness("lang-shop", "en")
+    assert "Your website" in en["message"] and all("dabaiye" not in (n["tip"] or "") for n in en["next_steps"])
+    assert all(n["action"] != "chat" or n["label"] == "Growth plan" for n in en["next_steps"])

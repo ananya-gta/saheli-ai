@@ -249,6 +249,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message] = Field(min_length=1, max_length=80)
     profile: dict | None = None
+    lang: Literal["hi", "en"] = "hi"  # the app's language switch: only a hint for when her own language is unclear
 
 
 @app.post("/api/chat")
@@ -263,7 +264,7 @@ def chat(req: ChatRequest, request: Request, user: dict = Depends(auth.current_u
         raise HTTPException(429, "Bahut saari baatein ek saath. Thodi der baad try kijiye.")
     drill = _drills(request, user)
     try:
-        return agent.chat([m.model_dump() for m in req.messages], req.profile)
+        return agent.chat([m.model_dump() for m in req.messages], req.profile, req.lang)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -422,10 +423,38 @@ def edit_site(slug: str, req: EditRequest, user: dict = Depends(auth.current_use
         _fail(exc, "Edit error")
 
 
-@app.get("/api/sites/{slug}/readiness")
-def site_readiness(slug: str, user: dict = Depends(auth.current_user)):
+class SitePhoto(BaseModel):
+    photo_id: str = Field(max_length=64)
+    name: str = Field(min_length=1, max_length=120)
+    price_inr: float | None = None
+    unit: str | None = Field(default=None, max_length=40)
+    description: str | None = Field(default=None, max_length=600)
+
+
+class SitePhotos(BaseModel):
+    items: list[SitePhoto] = Field(min_length=1, max_length=editor.MAX_NEW_PHOTOS)
+
+
+@app.post("/api/sites/{slug}/photos")
+def add_site_photos(slug: str, req: SitePhotos, user: dict = Depends(auth.current_user)):
+    """Her own product photos on a live website (from the dashboard camera button)."""
     auth.require_owner(slug, user)
-    return launch.readiness(slug)
+    if not _site_exists(slug):
+        raise HTTPException(404, "Website not found")
+    owned = set(_own_photos([i.photo_id for i in req.items], user))
+    items = [i.model_dump() for i in req.items if i.photo_id in owned]
+    if not items:
+        raise HTTPException(404, "Photos nahi mili")
+    try:
+        return editor.add_photos(slug, items)
+    except Exception as exc:
+        _fail(exc, "Photo update error")
+
+
+@app.get("/api/sites/{slug}/readiness")
+def site_readiness(slug: str, lang: Literal["hi", "en"] = "hi", user: dict = Depends(auth.current_user)):
+    auth.require_owner(slug, user)
+    return launch.readiness(slug, lang)
 
 
 @app.post("/api/sites/{slug}/verify")

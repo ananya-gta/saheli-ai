@@ -1,5 +1,5 @@
 import type { User } from "./types";
-import type { AssistOutput, AssistTask, BuildResult, CatalogItem, ChatMessage, ChatResponse, Enquiry, Order, OrderStats, Profile, Readiness, SiteSummary, Verification } from "./types";
+import type { AssistOutput, AssistTask, BuildResult, CatalogItem, ChatMessage, ChatResponse, Enquiry, Lang, Order, OrderStats, Profile, Readiness, SiteSummary, Verification } from "./types";
 
 /** Error from the API (or the network) with everything the UI needs to react well. */
 export class ApiError extends Error {
@@ -58,7 +58,7 @@ export const api = {
   exportUrl: "/api/account/export",
   deleteAccount: (confirm_email: string) => post<{ deleted: boolean; websites: number; photos: number }>("/api/account/delete", { confirm_email }),
   health: () => req<{ ok: boolean; missing_settings: string[]; integrations: Record<string, boolean> }>("/api/health"),
-  chat: (messages: ChatMessage[], profile: Profile | null) => post<ChatResponse>("/api/chat", { messages, profile }, 130000),
+  chat: (messages: ChatMessage[], profile: Profile | null, lang: Lang) => post<ChatResponse>("/api/chat", { messages, profile, lang }, 130000),
   build: (slug: string, profile: Profile) => post<BuildResult>("/api/sites/build", { slug, profile }, 300000),
   uploadPhotos: (images: string[]) => post<{ photo_ids: string[]; errors: { index: number; error: string }[] }>("/api/photos", { images }),
   analyze: (photo_ids: string[], context: string) => post<{ business_guess: string; items: CatalogItem[] }>("/api/catalog/analyze", { photo_ids, context }, 150000),
@@ -67,7 +67,9 @@ export const api = {
   summary: (slug: string) => req<{ text: string; speech: string; next_action: string; count: number }>(`/api/sites/${slug}/summary`, undefined, 90000),
   edit: (slug: string, instruction: string) => post<{ ok: boolean; summary: string; changed?: string[] }>(`/api/sites/${slug}/edit`, { instruction }, 180000),
   photoUrl: (id: string) => `/api/photos/${id}`,
-  readiness: (slug: string) => req<Readiness>(`/api/sites/${slug}/readiness`),
+  readiness: (slug: string, lang: Lang) => req<Readiness>(`/api/sites/${slug}/readiness?lang=${lang}`),
+  addPhotos: (slug: string, items: { photo_id: string; name: string; price_inr?: number; unit?: string; description?: string }[]) =>
+    post<{ ok: boolean; summary: string }>(`/api/sites/${slug}/photos`, { items }, 180000),
   verify: (slug: string) => post<Verification>(`/api/sites/${slug}/verify`, {}),
   assist: (slug: string, task: AssistTask, request = "") => post<AssistOutput>(`/api/sites/${slug}/assist`, { task, request }, 120000),
   marketing: (slug: string) => req<{ items: { task: string; output: AssistOutput; created_at: string }[] }>(`/api/sites/${slug}/marketing`),

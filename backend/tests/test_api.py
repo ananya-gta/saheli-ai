@@ -40,7 +40,7 @@ def test_claude_outage_returns_a_friendly_structured_error(monkeypatch):
 
 def test_failure_drill_is_admin_only(monkeypatch):
     seen = {}
-    def spy(history, profile=None):
+    def spy(history, profile=None, lang="hi"):
         try:
             resilience.inject("claude"); seen["fault"] = False
         except resilience.ServiceError:

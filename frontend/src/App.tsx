@@ -105,7 +105,9 @@ export default function App() {
             {user ? (
               <>
                 <button onClick={() => go("dashboard")} className={`hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold sm:inline-flex ${view === "dashboard" ? "bg-plum-50 text-plum-700" : "text-muted hover:text-plum-700"}`}><Icon name="grid" className="size-4" />Dashboard</button>
-                <button onClick={() => go("dashboard")} className="rounded-xl p-2 text-muted sm:hidden" aria-label="Dashboard"><Icon name="grid" /></button>
+                {view === "dashboard"
+                  ? <button onClick={() => go("chat")} className="rounded-xl p-2 text-muted hover:text-plum-700" aria-label="Saheli se baat" title="Saheli se baat"><Icon name="chat" /></button>
+                  : <button onClick={() => go("dashboard")} className="rounded-xl p-2 text-muted sm:hidden" aria-label="Dashboard"><Icon name="grid" /></button>}
                 {view === "chat" && <button onClick={newChat} className="rounded-xl p-2 text-muted hover:text-plum-700" aria-label="Nayi baatcheet" title="Nayi baatcheet"><Icon name="refresh" /></button>}
                 <div className="relative" ref={menuRef}>
                   <button onClick={() => setMenu((m) => !m)} aria-haspopup="menu" aria-expanded={menu} aria-label="Account"
@@ -137,7 +139,7 @@ export default function App() {
       {view === "home" && <Landing lang={lang} hasSites={!!user && hasSites} onStart={() => go("chat")} onVoice={() => go("chat", true)} onDashboard={() => go("dashboard")} />}
       {view === "login" && <Login lang={lang} onDone={(u) => { setUser(u); setView(after); }} />}
       {view === "chat" && user && <Chat key={`${user.id}-${chatKey}`} resetKey={chatKey} userId={user.id} userName={user.name} isAdmin={!!user.is_admin} lang={lang} onDashboard={() => go("dashboard")} />}
-      {view === "dashboard" && user && <Dashboard lang={lang} onNew={newChat} />}
+      {view === "dashboard" && user && <Dashboard lang={lang} onNew={newChat} onChat={() => go("chat")} />}
     </div>
   );
 }

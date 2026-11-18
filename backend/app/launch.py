@@ -41,7 +41,7 @@ def record_verification(slug: str, result: dict) -> None:
 
 
 # ---------------------------------------------------------------- readiness
-def readiness(slug: str) -> dict:
+def readiness(slug: str, lang: str = "hi") -> dict:
     """Score = sum of completed items. Every item is a fact we can check."""
     data = sitestore.load(slug)
     c, p, imgs = data.get("content") or {}, data.get("profile") or {}, data.get("images") or {}
@@ -56,41 +56,42 @@ def readiness(slug: str) -> dict:
     cx_ok = verified and all(vchecks.get(k) for k in ("mobile_ready", "has_title", "enquiry_form"))
 
     def item(label, done, points, tip=None, action=None):
+        tip = tip and tip[1 if lang == "en" else 0]
         return {"label": label, "done": bool(done), "points": points, "tip": None if done else tip, "action": None if done else action}
 
     sections = [
         ("Business identity", [
             item("Business name and identity", c.get("business_name") and c.get("tagline_en"), 5),
-            item("Product and service listings", len(products) >= 1, 5, "Apne products jodiye", "chat"),
+            item("Product and service listings", len(products) >= 1, 5, ("'Photos jodo' dabakar products jodiye", "Tap 'Add photos' to add products"), "photos"),
             item("Accurate product pricing", products and all(x.get("price_inr") for x in products), 5,
-                 "Kuch products ka price missing hai — dashboard se boliye: 'X ka price 250 kar do'", "edit"),
+                 ("Kuch products ka price missing hai — 'Website badlo' mein boliye: 'X ka price 250 kar do'", "Some prices are missing — tell 'Change website': 'Set the price of X to 250'"), "edit"),
             item("Business story and description", c.get("story_en"), 5),
             item("Contact and delivery information", (p.get("whatsapp") or p.get("email")) and (p.get("delivery_area") or p.get("city")), 4,
-                 "Saheli ko bataiye aap kahan tak delivery karti hain", "chat"),
+                 ("'Website badlo' mein boliye: 'Hum poore Jaipur mein deliver karte hain'", "Tell 'Change website': 'We deliver across Jaipur'"), "edit"),
         ]),
         ("Online presence", [
             item("Website published", (config.SITES_DIR / slug / "index.html").exists(), 10),
-            item("Verified live by Saheli", verified, 5, "Website check nahi ho paayi — dobara verify kijiye", "verify"),
-            item("Website performance and HTTPS", https and fast, 5, "VPS par deploy hote hi HTTPS apne aap lag jaata hai"),
-            item("Own .com domain connected", custom_domain, 5, "Apna .com chahiye to Saheli GoDaddy ka daam pehle dikhayegi — kharidna sirf aapki manzoori se", "domain"),
+            item("Verified live by Saheli", verified, 5, ("Website check nahi ho paayi — dobara check kijiye", "The live check failed — run it again"), "verify"),
+            item("Website performance and HTTPS", https and fast, 5, ("Secure link (HTTPS) apne aap lagta hai", "The secure link (HTTPS) is set up automatically")),
+            item("Own .com domain connected", custom_domain, 5, ("Apna .com baad mein jod sakti hain — kharidna sirf aapki manzoori se", "You can add your own .com later — only with your approval"), "domain"),
         ]),
         ("Customer ordering", [
-            item("WhatsApp ordering setup", p.get("whatsapp"), 7, "Saheli ko apna WhatsApp number bataiye", "chat"),
-            item("UPI payment setup", p.get("upi_id"), 7, "UPI ID jodiye — customers turant pay kar sakenge", "chat"),
-            item("Enquiries also arrive by email", mailer.enabled(), 6, "Email abhi server par juda nahi hai — tab tak saari enquiries dashboard mein dikhti hain"),
+            item("WhatsApp ordering setup", p.get("whatsapp"), 7, ("'Website badlo' mein boliye: 'Mera WhatsApp number 98XXXXXXXX hai'", "Tell 'Change website': 'My WhatsApp number is 98XXXXXXXX'"), "edit"),
+            item("UPI payment setup", p.get("upi_id"), 7, ("'Website badlo' mein boliye: 'Mera UPI ID naam@okaxis hai'", "Tell 'Change website': 'My UPI ID is name@okaxis'"), "edit"),
+            item("Enquiries also arrive by email", mailer.enabled(), 6, ("Tab tak saari enquiries yahin dashboard mein dikhti hain", "Until then, every enquiry shows here on the dashboard")),
             item("Customer-facing checks pass (mobile, title, enquiry form)", cx_ok, 4,
-                 "Saheli ki live check mein kuch kami mili — dashboard se dobara check kijiye", "verify"),
+                 ("Live check mein kuch kami mili — dobara check kijiye", "The live check found a gap — run it again"), "verify"),
             item("First customer order received", orders.stats(slug)["count"] > 0, 5,
-                 "Website ka link 5 purane customers ko WhatsApp par bhejiye — pehla order yahin dikhega", "share"),
+                 ("Website ka link 5 purane customers ko WhatsApp par bhejiye — pehla order yahin dikhega", "Send your website link to 5 customers on WhatsApp — the first order shows here"), "share"),
         ]),
         ("Trust", [
-            item("Original product photographs", owner_photos, 8, "Camera button se apne products ki asli photos bhejiye", "chat"),
-            item("Real customer words", p.get("testimonials"), 4, "Kisi khush customer ki baat Saheli ko bataiye", "chat"),
+            item("Original product photographs", owner_photos, 8, ("'Photos jodo' dabakar apne products ki asli photos lagaiye", "Tap 'Add photos' to put your real product photos on the site"), "photos"),
+            item("Real customer words", p.get("testimonials"), 4, ("'Website badlo' mein boliye: 'Priya ne kaha: …'", "Tell 'Change website': 'Priya said: …'"), "edit"),
             item("Visible to AI assistants (MCP)", (config.SITES_DIR / slug / ".well-known" / "agent-card.json").exists(), 3),
         ]),
         ("Marketing", [
-            item("Launch announcements and promotional content", data.get("marketing"), 6, "Assistant se Instagram posts ya WhatsApp message banwaiye", "assist"),
-            item("Growth plan", p.get("has_growth_plan") or data.get("growth_plan"), 4, "Saheli se growth plan maangiye", "chat"),
+            item("Launch announcements and promotional content", data.get("marketing"), 6, ("Assistant se Instagram posts ya WhatsApp message banwaiye", "Ask the assistant for Instagram posts or a WhatsApp message"), "assist"),
+            item("Growth plan", p.get("has_growth_plan") or data.get("growth_plan"), 4, ("Nayi baatcheet mein Saheli se growth plan maangiye", "Ask Saheli for a growth plan in a new chat"), "chat"),
         ]),
     ]
     out, total, got = [], 0, 0
@@ -106,11 +107,16 @@ def readiness(slug: str) -> dict:
     next_steps.sort(key=lambda i: (i["action"] is None, i["action"] == "domain", -i["points"]))
     score = round(100 * got / total)
     return {"score": score, "sections": out, "next_steps": next_steps[:3],
-            "message": _message(p.get("owner_name"), verified, next_steps[0] if next_steps else None, score)}
+            "message": _message(p.get("owner_name"), verified, next_steps[0] if next_steps else None, score, lang)}
 
 
-def _message(owner: str | None, live: bool, nxt: dict | None, score: int) -> str:
+def _message(owner: str | None, live: bool, nxt: dict | None, score: int, lang: str = "hi") -> str:
     """One warm, specific sentence: where she stands and the single most useful next step."""
+    if lang == "en":
+        head = (f"{owner}, your website is live!" if owner else "Your website is live!") if live else "Your website is built — only the live check is left."
+        if not nxt:
+            return head + " Everything is ready. Now share the link with as many customers as you can."
+        return f"{head} Next step: {nxt['tip'] or nxt['label']}."
     who = f"{owner} ji" if owner else "Aapki"
     head = (f"{who}, aapki website live hai!" if owner else "Aapki website live hai!") if live else \
         (f"{who}, website ban gayi hai — bas live check baaki hai." if owner else "Website ban gayi hai — bas live check baaki hai.")

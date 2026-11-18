@@ -4,10 +4,11 @@ import { compressImage } from "../lib/image";
 import { speak, stopSpeaking, useVoiceInput } from "../lib/speech";
 import { load, save, uid } from "../lib/storage";
 import type { ActivityItem, BuildResult, ChatMessage, DomainOption, Entry, Lang, Profile, ToolEvent } from "../types";
-import { ActivityLog, ApprovalCard, ExecutionLog, CatalogReview, DomainCards, PlanCard, ProfileCard, SuccessCard } from "./Cards";
+import { ApprovalCard, ExecutionLog, CatalogReview, DomainCards, PlanCard, ProfileCard, SuccessCard } from "./Cards";
 import { Icon } from "./Icon";
 import { LogoMark } from "./Logo";
 import { Notice } from "./ui";
+import { tx } from "../lib/i18n";
 
 const STEPS = ["Baat", "Profile", "Naam", "Manzoori", "Live"];
 const QUICK: Record<Lang, string[]> = {
@@ -20,16 +21,6 @@ const greeting = (lang: Lang, name?: string | null) => lang === "hi"
 
 export const sessionKey = (userId: number) => `saheli.session.v3.${userId}`;
 interface Session { entries: Entry[]; profile: Profile | null; }
-
-/** The parts of a profile the owner should confirm. Small edits (e.g. goals) don't re-show the card. */
-function profileSignature(p: Profile | null): string {
-  if (!p) return "";
-  return JSON.stringify({
-    n: p.business_name ?? "", c: p.category ?? "", city: p.city ?? "", pay: [...(p.payment_methods ?? [])].sort(),
-    pr: (p.products ?? []).map((x) => [x.name, x.price_inr ?? null, x.unit ?? ""]),
-  });
-}
-const worthShowing = (p: Profile) => !!(p.business_name || (p.products ?? []).length);
 
 /** Turns the agent's real tool calls into a readable log. Nothing is invented: labels are derived from
  *  the actual tool name, input and output returned by the backend. */
@@ -110,7 +101,7 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
   const run = useCallback(async (next: Entry[], extraProfile?: Profile | null) => {
     setBusy("thinking");
     try {
-      const res = await api.chat(history(next), extraProfile ?? profile);
+      const res = await api.chat(history(next), extraProfile ?? profile, lang);
       const add: Entry[] = [];
       const acts = activityFrom(res.events ?? []);
       if (acts.length) add.push({ kind: "activity", id: uid(), items: acts });
@@ -119,26 +110,11 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
       viaVoice.current = false;
       const doms = domainsFrom(res.events ?? []);
       if (doms.length) add.push({ kind: "domains", id: uid(), domains: doms });
-      if (res.approval) add.push({ kind: "approval", id: uid(), approval: res.approval, status: "pending" });
+      // her details are shown once, right before she approves the website — not in the middle of the conversation
+      if (res.approval) add.push({ kind: "profile", id: uid(), profile: res.profile ?? profile ?? {} }, { kind: "approval", id: uid(), approval: res.approval, status: "pending" });
       if (res.growth_plan) add.push({ kind: "plan", id: uid(), plan: res.growth_plan });
       if (res.profile) setProfile(res.profile);
-      const saved = res.profile && (res.events ?? []).some((e) => e.tool === "save_business_profile") ? res.profile : null;
-      setEntries((cur) => {
-        let list = cur;
-        let card: Entry[] = [];
-        if (saved && worthShowing(saved)) {
-          const cards = cur.filter((e): e is Extract<Entry, { kind: "profile" }> => e.kind === "profile");
-          const last = cards[cards.length - 1];
-          if (last && !last.confirmed) {
-            // still waiting for her confirmation: update that card in place instead of adding another
-            list = cur.map((e) => (e.id === last.id ? { ...last, profile: saved } : e));
-          } else if (!last || profileSignature(last.profile) !== profileSignature(saved)) {
-            // first time, or something important changed after she confirmed
-            card = [{ kind: "profile", id: uid(), profile: saved }];
-          }
-        }
-        return [...list, ...card, ...add];
-      });
+      setEntries((cur) => [...cur, ...add]);
     } catch (err) {
       const e = err as ApiError;
       setEntries((cur) => [...cur, { kind: "error", id: uid(), message: e.message, retry: e.retryable === false ? undefined : "chat", code: e.code, requestId: e.requestId }]);
@@ -197,7 +173,7 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
     const merged: Profile = { ...(profile ?? {}), products: [...existing.filter((p) => !rows.some((r) => r.name.toLowerCase() === p.name.toLowerCase())), ...rows] };
     setProfile(merged);
     setEntries((cur) => cur.map((e) => (e.id === entryId && e.kind === "catalog" ? { ...e, done: true } : e)));
-    const summary = "Maine photos se ye products add kiye hain: " + rows.map((r) => `${r.name}${r.unit ? ` (${r.unit})` : ""} — ₹${r.price_inr}`).join("; ") + ".";
+    const summary = tx(lang, "Maine photos se ye products add kiye hain: ", "I added these products from photos: ") + rows.map((r) => `${r.name}${r.unit ? ` (${r.unit})` : ""} — ₹${r.price_inr}`).join("; ") + ".";
     send(summary, merged);
   }
 
@@ -211,7 +187,9 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
       setEntries((cur) => [...cur.map((e) => (e.id === entryId && e.kind === "approval" ? { ...e, status: "done" as const } : e)),
         { kind: "activity", id: uid(), items: buildActivity(site) },
         { kind: "site", id: uid(), site },
-        { kind: "msg", id: uid(), role: "assistant", content: `Aapki website live ho gayi! ${site.content.business_name} ab poori duniya ke liye khuli hai. Chaliye, ab customers tak pahunchte hain — link apne WhatsApp contacts aur status par bhejiye. Kuch badalna ho to Dashboard se bas bol dijiye.` }]);
+        { kind: "msg", id: uid(), role: "assistant", content: tx(lang,
+          `Aapki website live ho gayi! ${site.content.business_name} ab poori duniya ke liye khuli hai. Chaliye, ab customers tak pahunchte hain — link apne WhatsApp contacts aur status par bhejiye. Kuch badalna ho to Dashboard se bas bol dijiye.`,
+          `Your website is live! ${site.content.business_name} is now open to the world. Let's reach customers — share the link with your WhatsApp contacts and status. To change anything, just tell the Dashboard.`) }]);
     } catch (err) {
       setBuildError((err as Error).message);
       setEntries((cur) => cur.map((e) => (e.id === entryId && e.kind === "approval" ? { ...e, status: "pending" } : e)));
@@ -247,15 +225,15 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
       </div>
 
       {/* timeline */}
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-        <div className="mx-auto flex max-w-2xl flex-col gap-3">
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5">
+        <div className="mx-auto flex min-w-0 max-w-2xl flex-col gap-3">
           {entries.map((e) => {
             switch (e.kind) {
               case "msg":
                 return e.role === "assistant" ? (
                   <div key={e.id} className="animate-rise flex items-end gap-2">
                     <LogoMark size={32} />
-                    <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-line bg-white px-4 py-2.5 text-[15.5px] leading-relaxed shadow-card">
+                    <div className="min-w-0 max-w-[85%] break-words rounded-2xl rounded-bl-md border border-line bg-white px-4 py-2.5 text-[15.5px] leading-relaxed shadow-card">
                       <Rich text={e.content} />
                     </div>
                     <button onClick={() => speak(e.content, lang)} aria-label="Sunao" className="mb-1 rounded-full p-1.5 text-muted transition hover:bg-plum-50 hover:text-plum-700"><Icon name="speaker" className="size-4" /></button>
@@ -263,22 +241,20 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
                 ) : (
                   <div key={e.id} className="animate-rise ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-plum-700 px-4 py-2.5 text-[15.5px] leading-relaxed text-ivory">{e.content}</div>
                 );
-              case "profile": return <ProfileCard key={e.id} profile={e.profile} compact confirmed={e.confirmed}
-                onConfirm={() => { setEntries((cur) => cur.map((x) => (x.id === e.id && x.kind === "profile" ? { ...x, confirmed: true } : x))); send(lang === "hi" ? "Haan, ye sahi hai" : "Yes, that's correct"); }}
-                onChange={() => setInput(lang === "hi" ? "Ek cheez badalni hai: " : "Please change: ")} />;
-              case "domains": return <DomainCards key={e.id} domains={e.domains} onPick={(d) => send(lang === "hi" ? `Mujhe ${d} pasand hai` : `I like ${d}`)} />;
-              case "catalog": return <CatalogReview key={e.id} items={e.items} done={e.done} onDone={(rows) => catalogDone(e.id, rows)} />;
-              case "approval": return <ApprovalCard key={e.id} approval={e.approval} status={e.status} error={e.status === "pending" ? buildError : undefined}
+              case "profile": return <ProfileCard key={e.id} profile={e.profile} compact lang={lang} />;
+              case "domains": return <DomainCards key={e.id} lang={lang} domains={e.domains} onPick={(d) => send(lang === "hi" ? `Mujhe ${d} pasand hai` : `I like ${d}`)} />;
+              case "catalog": return <CatalogReview key={e.id} lang={lang} items={e.items} done={e.done} onDone={(rows) => catalogDone(e.id, rows)} />;
+              case "approval": return <ApprovalCard key={e.id} lang={lang} approval={e.approval} status={e.status} error={e.status === "pending" ? buildError : undefined}
                 onApprove={() => approve(e.id)} onDecline={() => { setEntries((cur) => cur.map((x) => (x.id === e.id && x.kind === "approval" ? { ...x, status: "declined" } : x))); send(lang === "hi" ? "Mujhe koi doosra naam chahiye" : "I'd like a different name"); }} />;
-              case "site": return <SuccessCard key={e.id} site={e.site} onDashboard={onDashboard} />;
-              case "activity": return <ActivityLog key={e.id} items={e.items} />;
+              case "site": return <SuccessCard key={e.id} lang={lang} site={e.site} onDashboard={onDashboard} />;
+              case "activity": return null; // tool calls stay in the "log" panel, not in her conversation
               case "plan": return <PlanCard key={e.id} plan={e.plan} />;
               case "error": return (
                 <div key={e.id} className="animate-rise" role="alert">
                   <Notice tone="error">
                     <span className="block">{e.message}</span>
                     <span className="mt-2 flex flex-wrap items-center gap-3">
-                      {e.retry && <button onClick={retry} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-plum-700 shadow-card"><Icon name="refresh" className="size-4" />Dobara bhejiye</button>}
+                      {e.retry && <button onClick={retry} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-plum-700 shadow-card"><Icon name="refresh" className="size-4" />{tx(lang, "Dobara bhejiye", "Try again")}</button>}
                       {e.requestId && <span className="font-mono text-[11px] text-muted">ref {e.requestId}</span>}
                     </span>
                   </Notice>
@@ -355,7 +331,6 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
           <button type="button" onClick={voice.listening ? voice.stop : startListening} disabled={!!busy} aria-label={lang === "hi" ? "Bol kar likhiye" : "Speak"}
             className={`grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lift transition disabled:opacity-50 ${voice.listening ? "bg-rose" : "bg-plum-700 hover:bg-plum-800"}`}><Icon name="mic" /></button>
         </form>
-        <p className="mx-auto mt-2 max-w-2xl text-center text-[11.5px] text-muted">Saheli aapki manzoori ke bina kuch nahi khareedti. Camera button se apne products ki photo bhejiye.</p>
       </div>
     </div>
   );
