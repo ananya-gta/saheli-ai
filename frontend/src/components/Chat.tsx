@@ -10,7 +10,7 @@ import { LogoMark } from "./Logo";
 import { Notice } from "./ui";
 import { tx } from "../lib/i18n";
 
-const STEPS = ["Baat", "Profile", "Naam", "Manzoori", "Live"];
+const STEPS: Record<Lang, string[]> = { hi: ["Baat", "Profile", "Naam", "Manzoori", "Live"], en: ["Chat", "Profile", "Name", "Approve", "Live"] };
 const QUICK: Record<Lang, string[]> = {
   hi: ["Main ghar par achaar banati hoon", "Meri home bakery hai", "Main mehendi artist hoon", "Main tuition padhati hoon", "Mera boutique hai"],
   en: ["I make pickles at home", "I run a home bakery", "I'm a mehendi artist", "I teach tuition classes", "I own a boutique"],
@@ -18,6 +18,8 @@ const QUICK: Record<Lang, string[]> = {
 const greeting = (lang: Lang, name?: string | null) => lang === "hi"
   ? `Namaste${name ? ` ${name} ji` : ""}! Main Saheli hoon — aapki business saheli. Aapka hunar hum milkar duniya tak pahunchayenge: naam, website, orders, sab. Chaliye shuru karte hain — aap kya banati ya bechti hain?`
   : `Namaste${name ? ` ${name}` : ""}! I'm Saheli — your business partner. Together we'll take your work to the world: a name, a website, orders, everything. Let's begin — what do you make or sell?`;
+
+const GREETING_ID = "greeting"; // its text follows the language switch
 
 export const sessionKey = (userId: number) => `saheli.session.v3.${userId}`;
 interface Session { entries: Entry[]; profile: Profile | null; }
@@ -76,7 +78,7 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
   const KEY = sessionKey(userId); // each user's conversation is kept separately on this device
   // eslint-disable-next-line react-hooks/exhaustive-deps -- resetKey is the signal to re-read the saved session
   const initial = useMemo(() => load<Session>(KEY, { entries: [], profile: null }), [resetKey, KEY]);
-  const [entries, setEntries] = useState<Entry[]>(initial.entries.length ? initial.entries : [{ kind: "msg", id: uid(), role: "assistant", content: greeting(lang, userName) }]);
+  const [entries, setEntries] = useState<Entry[]>(initial.entries.length ? initial.entries : [{ kind: "msg", id: GREETING_ID, role: "assistant", content: greeting(lang, userName) }]);
   const [profile, setProfile] = useState<Profile | null>(initial.profile);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<false | "thinking" | "photos">(false);
@@ -211,12 +213,12 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
       <div className="border-b border-line bg-ivory/90 px-4 py-2.5 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
         <ol className="flex min-w-0 flex-1 items-center gap-1.5" aria-label="Progress">
-          {STEPS.map((s, i) => (
+          {STEPS[lang].map((s, i) => (
             <li key={s} className="flex flex-1 items-center gap-1.5">
               <span className={`grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-bold transition
                 ${i < step ? "bg-leaf text-white" : i === step ? "bg-plum-700 text-white" : "bg-sand text-muted"}`}>{i < step ? "✓" : i + 1}</span>
               <span className={`hidden truncate text-xs sm:inline ${i === step ? "font-semibold text-plum-700" : "text-muted"}`}>{s}</span>
-              {i < STEPS.length - 1 && <span className={`h-px flex-1 ${i < step ? "bg-leaf" : "bg-line"}`} />}
+              {i < STEPS[lang].length - 1 && <span className={`h-px flex-1 ${i < step ? "bg-leaf" : "bg-line"}`} />}
             </li>
           ))}
         </ol>
@@ -234,9 +236,9 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
                   <div key={e.id} className="animate-rise flex items-end gap-2">
                     <LogoMark size={32} />
                     <div className="min-w-0 max-w-[85%] break-words rounded-2xl rounded-bl-md border border-line bg-white px-4 py-2.5 text-[15.5px] leading-relaxed shadow-card">
-                      <Rich text={e.content} />
+                      <Rich text={e.id === GREETING_ID ? greeting(lang, userName) : e.content} />
                     </div>
-                    <button onClick={() => speak(e.content, lang)} aria-label="Sunao" className="mb-1 rounded-full p-1.5 text-muted transition hover:bg-plum-50 hover:text-plum-700"><Icon name="speaker" className="size-4" /></button>
+                    <button onClick={() => speak(e.id === GREETING_ID ? greeting(lang, userName) : e.content, lang)} aria-label="Sunao" className="mb-1 rounded-full p-1.5 text-muted transition hover:bg-plum-50 hover:text-plum-700"><Icon name="speaker" className="size-4" /></button>
                   </div>
                 ) : (
                   <div key={e.id} className="animate-rise ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-plum-700 px-4 py-2.5 text-[15.5px] leading-relaxed text-ivory">{e.content}</div>
