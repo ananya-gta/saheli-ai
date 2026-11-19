@@ -97,16 +97,16 @@ const C = {
 
 /* The women whose work deserves to be discovered — photos bundled in /public/women (boutique is downloaded on the server). */
 const WOMEN = {
-  homefood: { img: "/women/homefood.jpg", tone: "#8A3B1E", pos: "center 35%",
+  homefood: { img: "/women/homefood.webp", tone: "#8A3B1E", pos: "center 35%",
     hi: ["Ghar ka khana & achaar", "Dadi ke haath ka swaad", "Peedhiyon purani recipes — ab har ghar ki thaali tak."],
     en: ["Home food & achaar", "A grandmother's recipe", "Recipes handed down for generations — now on tables across India."] },
-  beauty: { img: "/women/beauty.jpg", tone: "#7A3A4E", pos: "center",
+  beauty: { img: "/women/beauty.webp", tone: "#7A3A4E", pos: "center",
     hi: ["Mehendi & beauty", "Har design ek kahani", "Wo kala jo poore shehar ki dulhanein dhoondhti hain."],
     en: ["Mehendi & beauty", "Every design tells a story", "Artistry that every bride in the city should be able to find."] },
-  bakery: { img: "/women/bakery.jpg", tone: "#5A3524", pos: "center 30%",
+  bakery: { img: "/women/bakery.webp", tone: "#5A3524", pos: "center 30%",
     hi: ["Home bakery", "Pyaar se bana, garv se parosa", "Uski rasoi, uski recipes, uske customers."],
     en: ["Home bakery", "Made with love, served with pride", "Her kitchen, her recipes, her customers."] },
-  education: { img: "/women/education.jpg", tone: "#1F4D5A", pos: "center 40%",
+  education: { img: "/women/education.webp", tone: "#1F4D5A", pos: "center 40%",
     hi: ["Tuition & classes", "Chaar deewaron se aage gyaan", "Wo teacher jis par poori colony bharosa karti hai."],
     en: ["Tuition & classes", "Knowledge beyond four walls", "The teacher every parent in the colony trusts."] },
   boutique: { img: null, tone: "#3A2E4A", pos: "center",
@@ -333,7 +333,11 @@ export function Landing({ lang, onStart, onVoice, onDashboard, hasSites, footer 
     const img = k === "boutique" ? boutiqueImg : w.img;
     return (
       <figure data-reveal className={`group relative overflow-hidden rounded-[28px] ${className}`} style={{ background: w.tone, ["--d" as string]: `${i * 90}ms` }}>
-        {img ? <img src={img} alt={title} loading="lazy" className="absolute inset-0 size-full object-cover transition duration-[1.2s] ease-out group-hover:scale-[1.05]" style={{ objectPosition: w.pos }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        {img ? <img src={img} alt={title} decoding="async" width={900} height={700}
+            // fade in once loaded (the card's colour shows meanwhile) instead of popping in
+            className="absolute inset-0 size-full object-cover opacity-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-[1.05]" style={{ objectPosition: w.pos }}
+            onLoad={(e) => e.currentTarget.classList.remove("opacity-0")} ref={(el) => { if (el?.complete && el.naturalWidth) el.classList.remove("opacity-0"); }}
+            onError={(e) => { e.currentTarget.style.display = "none"; }} />
           : <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 24px 24px,rgba(227,164,71,.75) 3px,transparent 3.5px),radial-gradient(circle at 24px 24px,transparent 9px,rgba(242,201,210,.45) 9.5px,rgba(242,201,210,.45) 11px,transparent 11.5px),radial-gradient(circle at 0 0,rgba(227,164,71,.4) 2px,transparent 2.5px)", backgroundSize: "48px 48px" }} />}
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(20,10,16,0) 30%,rgba(20,10,16,.55) 60%,rgba(20,10,16,.9))" }} />
         <figcaption className={`absolute inset-x-0 bottom-0 text-white ${small ? "p-4" : "p-5 sm:p-6"}`}>

@@ -39,6 +39,8 @@
 		root * /srv/app
 		@assets path /assets/*
 		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@images path /women/* /favicon* *.webp *.png *.jpg *.svg
+		header @images Cache-Control "public, max-age=2592000"
 		try_files {path} /index.html
 		file_server
 	}
