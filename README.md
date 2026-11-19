@@ -126,7 +126,10 @@ addresses in `ADMIN_EMAILS` get in; anyone else is logged out with a clear messa
 - **Feature mix** (chat, builds, edits, photos, assistant, voice), a **growth funnel** (signed up → built a website →
   received an order), **top websites**, a searchable **users** table, all **websites**, and **contact messages**.
 
-Only counts are stored for analytics (feature, user, time), never what anyone said in chat.
+![Saheli admin dashboard: KPIs, actions this week vs last week, feature mix, growth funnel and top websites](docs/admin-dashboard.jpg)
+
+Only counts are stored for analytics (feature, user, time), never what anyone said in chat. The Saheli team's own
+accounts (`ADMIN_EMAILS`) are left out of every number, so testing never inflates the user or usage figures.
 
 ### Who can do what
 | Anyone (customers) | Logged-in owner (only for her own websites) |
