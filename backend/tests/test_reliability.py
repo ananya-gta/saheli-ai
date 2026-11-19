@@ -111,3 +111,12 @@ def test_readiness_speaks_the_dashboard_language():
     en = launch.readiness("lang-shop", "en")
     assert "Your website" in en["message"] and all("dabaiye" not in (n["tip"] or "") for n in en["next_steps"])
     assert all(n["action"] != "chat" or n["label"] == "Growth plan" for n in en["next_steps"])
+
+
+def test_products_without_cart_get_a_whatsapp_ask_button():
+    from app import sitegen
+    content = {"business_name": "Meera's Boutique", "archetype": "fashion",
+               "products": [{"name": "Bridal lehenga", "photo_id": "b" * 16}]}
+    html = sitegen.render_site(content, {"whatsapp": "919829012345"}, "meera")
+    assert "Ask on WhatsApp" in html and "Bridal%20lehenga" in html
+    assert "Ask on WhatsApp" not in sitegen.render_site(content, {}, "meera")

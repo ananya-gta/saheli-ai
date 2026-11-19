@@ -12,6 +12,15 @@ professional website that takes real orders — without ever hearing the words D
 
 [![Saheli AI demo video — click to play](frontend/public/demo/poster.jpg)](frontend/public/demo/saheli-demo.mp4)
 
+> **For judges: try it in 3 minutes (best on a phone)**
+> 1. Open https://saheliai.com, tap **Saheli se baat karein** (or **Type your business idea**), and log in with any email (a one-time code arrives in your inbox, no password).
+> 2. Tap the mic and say, in Hindi, Hinglish or English, what you sell, e.g. *"Main ghar se aam ka achaar banati hoon, Jaipur mein"*. Pick **English** in the header if you prefer.
+> 3. Upload 1–2 product photos. Saheli names and describes them; you add prices.
+> 4. Pick a name (live GoDaddy availability and prices), tap **Haan, banao**, and open your live site.
+> 5. On the site: add to cart, place an order (UPI / cash), or tap **WhatsApp**. Then open the **Dashboard** to see the order and edit the site by voice.
+>
+> Nothing is bought without your approval. Test sites are free subdomains of saheliai.com.
+
 ---
 
 ## Contents

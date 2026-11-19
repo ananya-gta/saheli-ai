@@ -10,6 +10,7 @@
 
 {% macro buy(p, i, label="+ Add") -%}
 {% if p.price_inr and shop_enabled %}<span data-ctl="{{ i }}"><button class="add" data-add="{{ i }}">{{ label }}</button></span>
+{%- elif whatsapp %}<a class="add" href="https://wa.me/{{ whatsapp }}?text={{ ('Namaste! I would like to know more about ' ~ p.name ~ ' from ' ~ c.business_name ~ '.') | urlencode }}" target="_blank" rel="noopener">{{ icon("message") }} Ask on WhatsApp</a>
 {%- else %}<a class="add" href="#contact" data-prefill="{{ p.name }}">Enquire</a>{% endif %}
 {%- endmacro %}
 
