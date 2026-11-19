@@ -80,3 +80,8 @@ def test_admin_stats_are_only_for_admins_and_count_usage(monkeypatch):
     assert body["totals"]["users"] >= 2 and body["usage"]["chat"]["total"] >= 1
     row = next(u for u in body["users"] if u["email"] == "stats-user@example.com")
     assert row["chats"] >= 1
+    # the admin's own testing never shows up as a user
+    client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]})
+    again = client.get("/api/admin/stats").json()
+    assert all(u["email"] != "admin@example.com" for u in again["users"])
+    assert again["totals"]["users"] == body["totals"]["users"] and again["usage"]["chat"]["total"] == body["usage"]["chat"]["total"]
