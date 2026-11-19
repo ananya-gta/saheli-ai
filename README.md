@@ -260,7 +260,8 @@ The demo video is a product walkthrough recorded with **sample data** (labelled 
 ### Roadmap
 
 **Next (closing the gaps above)**
-- **Her own domain, end to end:** buy through the GoDaddy API after her approval, point DNS to her site, and renew on time, with reminders in Hindi.
+- **Her own domain, end to end, on the GoDaddy Developer Platform:** Saheli already uses its Domains v3 API (search, availability, prices) with a personal access token. Next we add its registration and DNS APIs, so after her *"haan"* the domain is bought, pointed to her site and renewed on time, with reminders in Hindi. Its hosting and email APIs can later give each business its own mailbox.
+- **Working alongside GoDaddy Airo:** Airo serves owners who are comfortable with GoDaddy's builder. Saheli brings women who aren't there yet into the GoDaddy ecosystem, and when Airo offers a partner API, Saheli can hand a ready business profile over to it.
 - **Real payments:** a UPI payment gateway so orders are marked paid automatically.
 - **More Indian languages:** Devanagari Hindi, then Marathi, Tamil, Bengali and others, plus a warmer neural Hindi voice.
 
