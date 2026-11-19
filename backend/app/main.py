@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import account, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, mailer, orders, resilience, sitegen, sitestore, storefront
+from . import account, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, mailer, orders, resilience, sitegen, sitestore, storefront, voice
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s rid=%(request_id)s %(message)s")
 _request_id: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
@@ -272,6 +272,29 @@ def chat(req: ChatRequest, request: Request, user: dict = Depends(auth.current_u
     finally:
         if drill is not None:
             resilience.reset_faults(drill)
+
+
+# ---------------------------------------------------------------- Saheli's voice
+class SpeakRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=3000)
+
+
+@app.get("/api/tts")
+def tts_status():
+    return {"enabled": voice.enabled(), "engine": voice.engine()}
+
+
+@app.post("/api/tts")
+def tts(req: SpeakRequest, user: dict = Depends(auth.current_user)):
+    """MP3 of the text in Saheli's neural voice; 503 tells the browser to use its own voice instead."""
+    if _rate_limited(f"tts:{user['id']}", limit=300, window=3600):
+        raise HTTPException(429, "Bahut saari baatein ek saath. Thodi der baad try kijiye.")
+    try:
+        audio, media_type = voice.synthesize(req.text)
+    except voice.VoiceUnavailable as exc:
+        log.warning("tts unavailable: %s", exc)
+        raise HTTPException(503, "Voice abhi available nahi hai") from exc
+    return Response(audio, media_type=media_type, headers={"Cache-Control": "private, max-age=86400"})
 
 
 # ---------------------------------------------------------------- photos -> catalog

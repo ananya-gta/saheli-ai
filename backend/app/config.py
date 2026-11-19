@@ -55,6 +55,12 @@ def site_url(slug: str) -> str:
 
 # Optional integrations (features clearly report when these are missing)
 PEXELS_API_KEY = _clean(os.getenv("PEXELS_API_KEY", ""))
+# Saheli's voice (Azure neural text-to-speech). Without a key the browser's own voice is used.
+AZURE_SPEECH_KEY = _clean(os.getenv("AZURE_SPEECH_KEY", ""))
+AZURE_SPEECH_REGION = _clean(os.getenv("AZURE_SPEECH_REGION", "centralindia")).lower()
+TTS_VOICE = _clean(os.getenv("TTS_VOICE", "hi-IN-SwaraNeural"))
+# Without an Azure key: the open-source Piper voice baked into the Docker image (see backend/Dockerfile)
+PIPER_MODEL = Path(os.getenv("PIPER_MODEL", "/opt/piper/hi_IN-priyamvada-medium.onnx"))
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = _clean(os.getenv("SMTP_USER", ""))

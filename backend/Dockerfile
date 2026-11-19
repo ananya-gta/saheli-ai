@@ -3,6 +3,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Saheli's voice without any API key: open-source Piper TTS with the Hindi woman's voice "priyamvada"
+COPY requirements-voice.txt .
+RUN pip install --no-cache-dir -r requirements-voice.txt && mkdir -p /opt/piper && python -c "\
+import urllib.request as u; b='https://huggingface.co/rhasspy/piper-voices/resolve/main/hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium.onnx'; \
+u.urlretrieve(b, '/opt/piper/hi_IN-priyamvada-medium.onnx'); u.urlretrieve(b + '.json', '/opt/piper/hi_IN-priyamvada-medium.onnx.json')"
 COPY app ./app
 # run as an unprivileged user; /data is the only writable place
 RUN useradd --create-home --uid 10001 saheli && mkdir -p /data/sites /data/private /data/uploads && chown -R saheli /data

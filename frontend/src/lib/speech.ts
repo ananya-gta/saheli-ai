@@ -87,18 +87,26 @@ export function saheliVoice(lang: Lang): SpeechSynthesisVoice | undefined {
     const l = v.lang.replace("_", "-").toLowerCase();
     const langScore = lang === "hi" ? (l === "hi-in" ? 40 : l === "en-in" ? 25 : l.startsWith("en") ? 5 : -100)
       : (l === "en-in" ? 40 : l.startsWith("en") ? 25 : l === "hi-in" ? 10 : -100);
-    return langScore + (has(v, FEMALE) ? 30 : 0) - (has(v, MALE) ? 80 : 0) + (has(v, NATURAL) ? 15 : 0) + (v.localService ? 0 : 3);
+    return langScore + (has(v, FEMALE) ? 30 : 0) - (has(v, MALE) ? 80 : 0) + (has(v, NATURAL) ? 15 : 0) + (/swara/i.test(v.name) ? 40 : 0) + (v.localService ? 0 : 3);
   };
   return [...voices].sort((a, b) => score(b) - score(a)).find((v) => score(v) > 0);
 }
 
-/** Read text aloud in Saheli's voice: warm, a little slower, slightly higher pitch.
- *  Returns false when the browser can't speak. `onEnd` fires when speech finishes or is stopped. */
-export function speak(text: string, lang: Lang = "hi", onEnd?: () => void): boolean {
-  if (typeof window === "undefined" || !window.speechSynthesis) return false;
+/* Saheli's own voice: Microsoft Swara (neural), served by /api/tts. Falls back to the device's voice when the
+   server has no speech key, the request fails, or the browser blocks playback. */
+let neural: boolean | null = null;
+if (typeof window !== "undefined") {
+  fetch("/api/tts", { credentials: "same-origin" }).then((r) => r.json()).then((d) => { neural = !!d.enabled; }).catch(() => { neural = false; });
+}
+let player: HTMLAudioElement | null = null;
+let turn = 0; // a newer speak/stop cancels an older request still in flight
+
+const cleanText = (text: string) => text.replace(/\*\*/g, "").replace(/https?:\/\/\S+/g, "link").replace(/\p{Extended_Pictographic}/gu, "");
+
+function browserSpeak(text: string, lang: Lang, onEnd?: () => void): boolean {
+  if (typeof window === "undefined" || !window.speechSynthesis) { onEnd?.(); return false; }
   window.speechSynthesis.cancel();
-  const clean = text.replace(/\*\*/g, "").replace(/https?:\/\/\S+/g, "link").replace(/\p{Extended_Pictographic}/gu, "");
-  const u = new SpeechSynthesisUtterance(clean);
+  const u = new SpeechSynthesisUtterance(cleanText(text));
   const voice = saheliVoice(lang);
   u.lang = voice?.lang ?? (lang === "hi" ? "hi-IN" : "en-IN");
   if (voice) u.voice = voice;
@@ -110,6 +118,29 @@ export function speak(text: string, lang: Lang = "hi", onEnd?: () => void): bool
   return true;
 }
 
+/** Read text aloud in Saheli's voice. Returns false when nothing can speak. `onEnd` fires when speech finishes or is stopped. */
+export function speak(text: string, lang: Lang = "hi", onEnd?: () => void): boolean {
+  stopSpeaking();
+  if (!neural) return browserSpeak(text, lang, onEnd);
+  const mine = ++turn;
+  fetch("/api/tts", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: cleanText(text).slice(0, 3000) }) })
+    .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.blob(); })
+    .then((blob) => {
+      if (mine !== turn) return;
+      const url = URL.createObjectURL(blob);
+      player = new Audio(url);
+      const done = () => { URL.revokeObjectURL(url); if (mine === turn) onEnd?.(); };
+      player.onended = done;
+      player.onerror = done;
+      return player.play();
+    })
+    .catch(() => { if (mine === turn) browserSpeak(text, lang, onEnd); });
+  return true;
+}
+
 export function stopSpeaking() {
+  turn++;
+  if (player) { player.pause(); player = null; }
   if (typeof window !== "undefined") window.speechSynthesis?.cancel();
 }
