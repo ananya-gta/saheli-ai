@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { tx } from "../lib/i18n";
 import { api } from "../api";
 import type { Lang, User } from "../types";
 import { Icon } from "./Icon";
@@ -22,7 +23,8 @@ const T = {
   },
 };
 
-export function Login({ lang, onDone }: { lang: Lang; onDone: (u: User) => void }) {
+/** `admin`: the Saheli team's login (same email code), which only lets in ADMIN_EMAILS. */
+export function Login({ lang, onDone, admin = false, onMode }: { lang: Lang; onDone: (u: User) => void; admin?: boolean; onMode?: (admin: boolean) => void }) {
   const t = T[lang];
   const [step, setStep] = useState<"email" | "code" | "name">("email");
   const [email, setEmail] = useState("");
@@ -54,8 +56,14 @@ export function Login({ lang, onDone }: { lang: Lang; onDone: (u: User) => void 
     setError(undefined); setBusy(true);
     try {
       const r = await api.verifyCode(email.trim(), value);
+      if (admin && !r.user.is_admin) {
+        await api.logout().catch(() => {});
+        setStep("email"); setCode("");
+        setError(lang === "hi" ? "Yeh email admin nahi hai. Saheli team ki admin email se login kijiye." : "This email is not an admin. Log in with a Saheli team admin email.");
+        return;
+      }
       setUser(r.user);
-      if (r.user.name) onDone(r.user); else setStep("name");
+      if (r.user.name || admin) onDone(r.user); else setStep("name");
     } catch (err) { setError((err as Error).message); setCode(""); codeRef.current?.focus(); } finally { setBusy(false); }
   }
 
@@ -74,8 +82,9 @@ export function Login({ lang, onDone }: { lang: Lang; onDone: (u: User) => void 
 
         {step === "email" && (
           <form onSubmit={sendCode} noValidate>
-            <h1 className="mt-5 font-display text-3xl">{t.title}</h1>
-            <p className="mt-1.5 text-[15px] text-muted">{t.sub}</p>
+            {admin && <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-plum-50 px-2.5 py-1 text-xs font-semibold text-plum-700"><Icon name="shield" className="size-3.5" />Saheli team</span>}
+            <h1 className={`${admin ? "mt-2" : "mt-5"} font-display text-3xl`}>{admin ? tx(lang, "Admin login", "Admin login") : t.title}</h1>
+            <p className="mt-1.5 text-[15px] text-muted">{admin ? tx(lang, "Sirf Saheli team ke liye. Apni admin email daaliye, code aayega.", "For the Saheli team only. Enter your admin email to get a code.") : t.sub}</p>
             <label className="mt-6 block text-sm font-semibold" htmlFor="email">{t.email}</label>
             <input id="email" type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="naam@gmail.com" aria-invalid={!!error}
@@ -83,6 +92,12 @@ export function Login({ lang, onDone }: { lang: Lang; onDone: (u: User) => void 
             {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
             <Button type="submit" className="mt-5 w-full min-h-12" loading={busy} icon="arrow">{t.send}</Button>
             <p className="mt-4 flex items-start gap-2 text-xs text-muted"><Icon name="shield" className="mt-0.5 size-4 shrink-0" />{t.privacy}</p>
+            {onMode && (
+              <p className="mt-5 border-t border-line pt-4 text-center text-sm text-muted">
+                {admin ? <button type="button" onClick={() => { onMode(false); setError(undefined); }} className="font-semibold text-plum-700 hover:underline">{tx(lang, "← Normal login", "← Regular login")}</button>
+                  : <>{tx(lang, "Saheli team se hain?", "On the Saheli team?")} <button type="button" onClick={() => { onMode(true); setError(undefined); }} className="font-semibold text-plum-700 hover:underline">{tx(lang, "Admin login", "Admin login")}</button></>}
+              </p>
+            )}
           </form>
         )}
 

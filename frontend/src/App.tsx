@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { Chat, sessionKey } from "./components/Chat";
+import { Admin } from "./components/Admin";
 import { Dashboard } from "./components/Dashboard";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
@@ -12,10 +13,10 @@ import { tx } from "./lib/i18n";
 import { clear, load, save } from "./lib/storage";
 import type { Lang, User } from "./types";
 
-type View = "home" | "about" | "contact" | "login" | "chat" | "dashboard";
+type View = "home" | "about" | "contact" | "login" | "chat" | "dashboard" | "admin";
 const PUBLIC: View[] = ["home", "about", "contact"];
-const fromHash = (): View | null => { const h = location.hash.replace(/^#\/?/, ""); return h === "about" || h === "contact" ? h : null; };
-type Gated = "chat" | "dashboard";
+const fromHash = (): View | null => { const h = location.hash.replace(/^#\/?/, ""); return h === "about" || h === "contact" || h === "admin" ? h : null; };
+type Gated = "chat" | "dashboard" | "admin";
 
 export default function App() {
   const [lang, setLang] = useState<Lang>(() => load<Lang>("saheli.lang", "hi"));
@@ -34,12 +35,12 @@ export default function App() {
 
   // public pages have their own address (saheliai.com/#/about), so they can be shared and the back button works
   useEffect(() => {
-    const want = view === "about" || view === "contact" ? `#/${view}` : "";
+    const want = view === "about" || view === "contact" || view === "admin" ? `#/${view}` : "";
     if (location.hash !== want) history.pushState(null, "", want || location.pathname + location.search);
     setNavOpen(false);
   }, [view]);
   useEffect(() => {
-    const onPop = () => setView((v) => fromHash() ?? (v === "about" || v === "contact" ? "home" : v));
+    const onPop = () => setView((v) => fromHash() ?? (v === "about" || v === "contact" || v === "admin" ? "home" : v));
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -48,6 +49,7 @@ export default function App() {
   useEffect(() => {
     api.me().then((r) => {
       setUser(r.user);
+      if (!r.user && fromHash() === "admin") { setAfter("admin"); setView("login"); }
       if (r.user && !fromHash() && load(sessionKey(r.user.id), { entries: [] as unknown[] }).entries.length > 1) setView("chat");
     }).catch(() => setUser(null));
     api.health().then((h) => setHealth({ ok: h.ok, missing: h.missing_settings })).catch(() => setHealth({ ok: false, missing: ["server"] }));
@@ -57,7 +59,7 @@ export default function App() {
 
   // any 401 from the API (session expired) -> back to login
   useEffect(() => {
-    const onUnauth = () => { setUser(null); setView((v) => { if (v === "chat" || v === "dashboard") setAfter(v); return "login"; }); };
+    const onUnauth = () => { setUser(null); setView((v) => { if (v === "chat" || v === "dashboard" || v === "admin") setAfter(v); return "login"; }); };
     window.addEventListener("saheli:unauthorized", onUnauth);
     return () => window.removeEventListener("saheli:unauthorized", onUnauth);
   }, []);
@@ -151,6 +153,7 @@ export default function App() {
                       <div className="px-3 py-2"><b className="block truncate text-sm">{user.name || tx(lang, "Saheli user", "Saheli user")}</b><span className="block truncate text-xs text-muted">{user.email}</span></div>
                       <button role="menuitem" onClick={() => { setMenu(false); go("dashboard"); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-plum-50"><Icon name="grid" className="size-4" />{tx(lang, "Meri websites", "My websites")}</button>
                       <button role="menuitem" onClick={() => { setMenu(false); go("chat"); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-plum-50"><Icon name="chat" className="size-4" />{tx(lang, "Saheli se baat", "Chat with Saheli")}</button>
+                      {user.is_admin && <button role="menuitem" onClick={() => { setMenu(false); setView("admin"); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-plum-700 hover:bg-plum-50"><Icon name="trend" className="size-4" />Admin dashboard</button>}
                       <button role="menuitem" onClick={() => { setMenu(false); nav("contact"); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-plum-50"><Icon name="inbox" className="size-4" />{tx(lang, "Madad / sampark", "Help / contact")}</button>
                       <a role="menuitem" href={api.exportUrl} download onClick={() => setMenu(false)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-plum-50"><Icon name="arrow" className="size-4 rotate-90" />{tx(lang, "Mera data download karein", "Download my data")}</a>
                       <button role="menuitem" onClick={deleteAccount} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-rose hover:bg-[#FCEFF1]"><Icon name="x" className="size-4" />{tx(lang, "Account delete karein", "Delete account")}</button>
@@ -190,8 +193,10 @@ export default function App() {
           {footer}
         </div>
       )}
-      {view === "login" && <Login lang={lang} onDone={(u) => { setUser(u); setView(after); }} />}
+      {view === "login" && <Login lang={lang} admin={after === "admin"} onMode={(a) => setAfter(a ? "admin" : "dashboard")} onDone={(u) => { setUser(u); setView(after); }} />}
       {view === "chat" && user && <Chat key={`${user.id}-${chatKey}`} resetKey={chatKey} userId={user.id} userName={user.name} isAdmin={!!user.is_admin} lang={lang} onDashboard={() => go("dashboard")} />}
+      {view === "admin" && user?.is_admin && <Admin />}
+      {view === "admin" && user && !user.is_admin && <main className="mx-auto w-full max-w-md px-4 py-10"><Notice>Admins only. Log in with an email listed in ADMIN_EMAILS.</Notice></main>}
       {view === "dashboard" && user && <Dashboard lang={lang} onNew={newChat} onChat={() => go("chat")} />}
     </div>
   );

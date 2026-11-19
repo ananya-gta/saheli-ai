@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import account, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, mailer, orders, resilience, sitegen, sitestore, storefront, voice
+from . import account, admin, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, mailer, orders, resilience, sitegen, sitestore, storefront, voice
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s rid=%(request_id)s %(message)s")
 _request_id: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
@@ -262,6 +262,7 @@ def chat(req: ChatRequest, request: Request, user: dict = Depends(auth.current_u
         raise HTTPException(400, "Last message must be from the user")
     if _rate_limited(f"chat:{user['id']}", limit=120, window=3600):
         raise HTTPException(429, "Bahut saari baatein ek saath. Thodi der baad try kijiye.")
+    admin.track(user["id"], "chat")
     drill = _drills(request, user)
     try:
         return agent.chat([m.model_dump() for m in req.messages], req.profile, req.lang)
@@ -272,6 +273,15 @@ def chat(req: ChatRequest, request: Request, user: dict = Depends(auth.current_u
     finally:
         if drill is not None:
             resilience.reset_faults(drill)
+
+
+# ---------------------------------------------------------------- platform admin
+@app.get("/api/admin/stats")
+def admin_stats(user: dict = Depends(auth.current_user)):
+    """Users, sites, orders and feature usage across the platform. Only for ADMIN_EMAILS."""
+    if user.get("email", "").lower() not in config.admin_emails():
+        raise HTTPException(403, "Sirf admin ke liye")
+    return admin.stats()
 
 
 # ---------------------------------------------------------------- Saheli's voice
@@ -289,6 +299,7 @@ def tts(req: SpeakRequest, user: dict = Depends(auth.current_user)):
     """MP3 of the text in Saheli's neural voice; 503 tells the browser to use its own voice instead."""
     if _rate_limited(f"tts:{user['id']}", limit=300, window=3600):
         raise HTTPException(429, "Bahut saari baatein ek saath. Thodi der baad try kijiye.")
+    admin.track(user["id"], "voice")
     try:
         audio, media_type = voice.synthesize(req.text)
     except voice.VoiceUnavailable as exc:
@@ -342,6 +353,7 @@ class AnalyzeRequest(BaseModel):
 
 @app.post("/api/catalog/analyze")
 def analyze_catalog(req: AnalyzeRequest, user: dict = Depends(auth.current_user)):
+    admin.track(user["id"], "photos")
     ids = _own_photos(req.photo_ids, user)
     if not ids:
         raise HTTPException(404, "Photos nahi mili")
@@ -387,6 +399,7 @@ def build_site(req: BuildRequest, user: dict = Depends(auth.current_user)):
         raise HTTPException(400, "This name is already taken on Saheli. Try another.")
     if sitestore.exists(slug):
         raise HTTPException(400, "Aapki is naam ki website pehle se bani hai.")
+    admin.track(user["id"], "build")
     try:
         result = sitegen.build_site(slug, profile)
     except Exception as exc:
@@ -437,6 +450,7 @@ class EditRequest(BaseModel):
 
 @app.post("/api/sites/{slug}/edit")
 def edit_site(slug: str, req: EditRequest, user: dict = Depends(auth.current_user)):
+    admin.track(user["id"], "edit")
     auth.require_owner(slug, user)
     if not _site_exists(slug):
         raise HTTPException(404, "Website not found")
@@ -461,6 +475,7 @@ class SitePhotos(BaseModel):
 @app.post("/api/sites/{slug}/photos")
 def add_site_photos(slug: str, req: SitePhotos, user: dict = Depends(auth.current_user)):
     """Her own product photos on a live website (from the dashboard camera button)."""
+    admin.track(user["id"], "photos")
     auth.require_owner(slug, user)
     if not _site_exists(slug):
         raise HTTPException(404, "Website not found")
@@ -496,6 +511,7 @@ class AssistRequest(BaseModel):
 @app.post("/api/sites/{slug}/assist")
 def site_assist(slug: str, req: AssistRequest, user: dict = Depends(auth.current_user)):
     auth.require_owner(slug, user)
+    admin.track(user["id"], "assist")
     if req.task == "custom" and not req.request.strip():
         raise HTTPException(400, "Bataiye kya chahiye")
     if _rate_limited(f"assist:{user['id']}", limit=30, window=3600):

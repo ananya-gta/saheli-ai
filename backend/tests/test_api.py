@@ -66,3 +66,17 @@ def test_contact_form_is_saved_and_mailed_to_the_platform_mailbox(monkeypatch):
     assert db.one("SELECT name FROM contact_messages WHERE email = ?", "priya@example.com")["name"] == "Priya"
     assert client.post("/api/contact", json={"name": "x", "email": "not-an-email", "message": "hello there"}).status_code == 422
     assert client.get("/api/contact").json()["email"] == "hello@saheliai.com"
+
+
+def test_admin_stats_are_only_for_admins_and_count_usage(monkeypatch):
+    def reply(history, profile=None, lang="hi"):
+        return {"reply": "ok", "events": [], "profile": None, "approval": None, "growth_plan": None, "degraded": None}
+    monkeypatch.setattr(agent, "chat", reply)
+    login("stats-user@example.com")
+    client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]})
+    assert client.get("/api/admin/stats").status_code == 403
+    login("admin@example.com")
+    body = client.get("/api/admin/stats").json()
+    assert body["totals"]["users"] >= 2 and body["usage"]["chat"]["total"] >= 1
+    row = next(u for u in body["users"] if u["email"] == "stats-user@example.com")
+    assert row["chats"] >= 1

@@ -90,6 +90,13 @@ MIGRATIONS = [
       message TEXT NOT NULL,
       received_at TEXT NOT NULL DEFAULT (datetime('now'))
     )""",
+    """CREATE TABLE IF NOT EXISTS usage_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      at TEXT NOT NULL DEFAULT (datetime('now'))
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_usage_at ON usage_events(at)",
 ]
 _init_lock = threading.Lock()
 _ready = False

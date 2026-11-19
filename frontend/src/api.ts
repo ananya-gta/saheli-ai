@@ -37,6 +37,16 @@ async function req<T>(path: string, init?: RequestInit, timeoutMs = 30000): Prom
   return data as unknown as T;
 }
 
+export interface AdminStats {
+  totals: { users: number; users_new_7d: number; users_active_7d: number; sites: number; sites_new_7d: number;
+    orders: number; order_value: number; enquiries: number; contact_messages: number; users_with_site: number; users_with_order: number };
+  usage: Record<string, { total: number; last_7d: number }>;
+  daily: { day: string; events: number; users: number }[];
+  users: { id: number; email: string; name: string | null; created_at: string; last_login_at: string | null; sites: number; chats: number; orders: number; last_active: string | null }[];
+  sites: { slug: string; created_at: string; owner: string; orders: number; enquiries: number }[];
+  messages: { name: string; email: string; topic: string | null; message: string; received_at: string }[];
+}
+
 export interface ShowcaseSite {
   slug: string; name: string; tagline: string; archetype: string; url: string; image?: string | null;
   readiness?: { score: number; done: number; total: number; done_labels: string[]; next: { label: string; points: number }[] } | null;
@@ -81,4 +91,5 @@ export const api = {
     post<{ ok: boolean; email_queued: boolean }>("/api/contact", msg),
   showcase: () => req<{ sites: ShowcaseSite[] }>("/api/showcase"),
   landing: () => req<LandingData>("/api/landing"),
+  adminStats: () => req<AdminStats>("/api/admin/stats"),
 };

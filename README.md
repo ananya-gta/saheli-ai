@@ -105,6 +105,8 @@ assistant can browse the products and place an order.
 - The order appears in your dashboard and your email. After you see the money in your UPI app, tap
   **Payment mil gayi**, and later **Deliver ho gaya**. Saheli never marks an order paid on her own.
 - Customers can also send questions through the website's contact form; they arrive in your email and dashboard.
+- Products without a price (or trades without a cart, like boutique or mehendi) get an **Ask on WhatsApp** button
+  that opens WhatsApp with the product name already in the message.
 
 ### Step 7 — Grow after launch (Dashboard)
 - **Orders and enquiries** for each of your websites.
@@ -112,11 +114,26 @@ assistant can browse the products and place an order.
 - **Edit by voice** — *"Chocolate cake ka price 900 kar do"* → the live site updates in seconds.
 - **Business assistant** — Instagram posts, WhatsApp announcements, festival offers, customer message templates.
 - **Launch readiness** — a score made only from things that are really done, plus your next best step.
+- **Saheli speaks back** in a woman's Hindi voice that runs on our own server (open-source Piper,
+  `hi_IN-priyamvada`). Her Hinglish replies are first rewritten in Devanagari so they sound natural, not like an English
+  voice reading Hindi. No paid speech service is needed; Microsoft Azure's Swara voice is an optional upgrade.
+
+### For the Saheli team — Admin dashboard
+On the login page, tap **Admin login** (or open `saheliai.com/#/admin`). It uses the same email code, and only the
+addresses in `ADMIN_EMAILS` get in; anyone else is logged out with a clear message. The dashboard shows:
+- **KPIs:** users (new and active this week), websites live, orders with total value, enquiries and contact messages.
+- **This week vs last week:** actions per day (paired bars) and active people per day (two lines), with % change.
+- **Feature mix** (chat, builds, edits, photos, assistant, voice), a **growth funnel** (signed up → built a website →
+  received an order), **top websites**, a searchable **users** table, all **websites**, and **contact messages**.
+
+Only counts are stored for analytics (feature, user, time), never what anyone said in chat.
 
 ### Who can do what
 | Anyone (customers) | Logged-in owner (only for her own websites) |
 |---|---|
 | Visit websites, order, pay by UPI, message on WhatsApp, send enquiries, use the MCP storefront | Chat with Saheli, upload photos, build websites, see orders/enquiries/summaries, edit her site, use the business assistant |
+
+**Admins** (emails in `ADMIN_EMAILS`) can also open the platform analytics dashboard and run the failure drills.
 
 ## 4. How Claude and GoDaddy are used
 
@@ -129,6 +146,7 @@ assistant can browse the products and place an order.
 | Website content | A forced tool call returns validated, structured content and picks a design + palette. **Claude never writes HTML** — Jinja2 templates with auto-escaping render it. | [`sitegen.py`](backend/app/sitegen.py) |
 | Edit by voice | A forced tool call returns only the changed fields; deterministic code validates them before they go live | [`editor.py`](backend/app/editor.py) |
 | Summaries and marketing | Fast model for enquiry summaries (falls back to the main model); business assistant for posts and messages | [`editor.py`](backend/app/editor.py), [`launch.py`](backend/app/launch.py) |
+| Saheli's voice | Fast model rewrites Hinglish replies in Devanagari, then the open-source Piper voice (or Azure Swara, if configured) speaks them; cached, with the browser voice as fallback | [`voice.py`](backend/app/voice.py) |
 
 **GoDaddy:**
 
@@ -220,6 +238,8 @@ Design principles:
 - Secrets only in `.env` (git-ignored, `chmod 600` on the server). `ENV=production` is explicit, and the API
   **refuses to start** with unsafe settings (default secret, no domain, no SMTP).
 - Uploaded photos are decoded and re-encoded, size-limited, and owned by one user.
+- Usage analytics store only counts (feature, user, time), never chat text. The admin dashboard and its API
+  (`/api/admin/stats`) are refused (403) for anyone not in `ADMIN_EMAILS`.
 
 **AI safety**
 - The profile the browser sends back is untrusted: it is reduced to known, typed, size-limited fields and given to
@@ -249,6 +269,8 @@ Design principles:
 | Hosting on `<name>.saheliai.com` with HTTPS | ✅ Real (GoDaddy VPS + Caddy) |
 | Customer orders, server-side pricing, idempotency | ✅ Real |
 | Email notifications (login codes, orders, enquiries) | ✅ Real (Titan SMTP) |
+| Saheli's spoken voice (Hindi, female) | ✅ Real (open-source Piper on our server; Azure Swara optional) |
+| Admin analytics dashboard and admin login | ✅ Real |
 | MCP storefront for AI assistants | ✅ Real |
 | UPI | ⚠️ UPI intent link to the owner's own UPI ID — **not a payment gateway**; the owner confirms payment |
 | Buying a domain through the API | ❌ Not built — bought on GoDaddy checkout |
@@ -263,7 +285,7 @@ The demo video is a product walkthrough recorded with **sample data** (labelled 
 - **Her own domain, end to end, on the GoDaddy Developer Platform:** Saheli already uses its Domains v3 API (search, availability, prices) with a personal access token. Next we add its registration and DNS APIs, so after her *"haan"* the domain is bought, pointed to her site and renewed on time, with reminders in Hindi. Its hosting and email APIs can later give each business its own mailbox.
 - **Working alongside GoDaddy Airo:** Airo serves owners who are comfortable with GoDaddy's builder. Saheli brings women who aren't there yet into the GoDaddy ecosystem, and when Airo offers a partner API, Saheli can hand a ready business profile over to it.
 - **Real payments:** a UPI payment gateway so orders are marked paid automatically.
-- **More Indian languages:** Devanagari Hindi, then Marathi, Tamil, Bengali and others, plus a warmer neural Hindi voice.
+- **More Indian languages:** Devanagari Hindi, then Marathi, Tamil, Bengali and others, plus more voice choices.
 
 **Growth for her business**
 - **WhatsApp Business:** order alerts and replies to customers on the app she already uses every day.
@@ -299,7 +321,9 @@ cd frontend && npm ci && npm run dev                       # http://localhost:51
   screen (development only — never in production).
 - **Demo websites:** built automatically in the background on first start (needs internet). Or run
   `python -m app.demo_sites you@example.com` to build them and show them in your dashboard.
-- **Admin:** `python -m app.manage users` lists users and their websites.
+- **Admin:** add your email to `ADMIN_EMAILS` in `.env`, restart the backend, then use **Admin login** or open
+  `localhost:5173/#/admin`. From the terminal, `python -m app.manage users` lists users and their websites.
+- **Voice locally:** the Piper voice is installed only in the Docker image, so `npm run dev` uses the browser's voice.
 - **AI-agent test:**
   ```bash
   curl -s localhost:8000/mcp/demo-bakery -H 'Content-Type: application/json' \
@@ -309,6 +333,8 @@ cd frontend && npm ci && npm run dev                       # http://localhost:51
 | Problem | Fix |
 |---|---|
 | Voice doesn't work | Use Chrome; allow the microphone (🔒 in the address bar) |
+| Saheli speaks with the browser's voice | Check `/api/tts`: it should say `"engine": "piper"`. Rebuild the API image (`docker compose up -d --build api`) |
+| Admin dashboard says "Admins only" | Add your email to `ADMIN_EMAILS` in `.env` and restart the backend |
 | Websites have no photos | The backend needs internet access; add a free `PEXELS_API_KEY` for better photos |
 | `model not found` | Set `CLAUDE_MODEL` / `CLAUDE_FAST_MODEL` to models available in your Claude Console |
 | Titan login rejected | Use `SMTP_HOST=smtpout.secureserver.net`, port 465, full email address as the username |
@@ -319,7 +345,7 @@ Full step-by-step guide: **[DEPLOY.md](DEPLOY.md)** — GoDaddy VPS → Docker �
 Titan mailbox → `scripts/deploy.sh`. In short:
 
 ```bash
-# on the VPS, in the cloned repo, with .env filled in (ENV=production, DOMAIN=..., SECRET_KEY, SMTP_*)
+# on the VPS, in the cloned repo, with .env filled in (ENV=production, DOMAIN=..., SECRET_KEY, SMTP_*, ADMIN_EMAILS)
 chmod 600 .env
 ./scripts/deploy.sh          # builds, starts, waits for health, checks https://<DOMAIN>/api/health
 ```
@@ -327,15 +353,15 @@ chmod 600 .env
 ## 10. Tests and CI
 
 ```bash
-cd backend && python -m pytest -q        # 53 tests
+cd backend && python -m pytest -q        # 67 tests
 cd frontend && npm run typecheck && npm run build
 ```
 
 The tests cover: retries and backoff, circuit breaker states, error classification, GoDaddy outages, timeouts and
 4xx responses, the agent loop under Claude and tool failures, order validation, the API error contract, login
 brute-force limits, cross-owner access (IDOR), ownership transfer, mail-relay protection, untrusted profiles, unsafe
-production configuration, idempotent and concurrent orders, lost-update protection, failed-build rollback and
-validation of AI edits. GitHub Actions runs the backend tests, the frontend typecheck and build, and the Docker
+production configuration, idempotent and concurrent orders, lost-update protection, failed-build rollback,
+validation of AI edits, the voice pipeline (Devanagari, caching, fallback) and admin-only analytics. GitHub Actions runs the backend tests, the frontend typecheck and build, and the Docker
 image build on every push and pull request.
 
 ## 11. Project structure
@@ -355,6 +381,8 @@ saheli-ai/
 │   ├── enquiries.py     enquiries: database + email
 │   ├── storefront.py    MCP server + agent-card.json + llms.txt per site
 │   ├── auth.py          email-code login, sessions, ownership
+│   ├── voice.py         Saheli's voice: Hinglish → Devanagari, Piper (open source) or Azure Swara
+│   ├── admin.py         usage counts + platform statistics for the admin dashboard
 │   ├── sitestore.py     site data: atomic writes, per-site locks, staged builds
 │   ├── db.py            SQLite (WAL) + versioned migrations
 │   ├── godaddy.py       GoDaddy Domains v3 client (retries + circuit breaker)
@@ -364,7 +392,7 @@ saheli-ai/
 │   ├── config.py        settings + production safety checks
 │   └── templates/       website layouts: bakery, home food, boutique, beauty, education
 ├── backend/tests/       pytest suite
-├── frontend/            React + TypeScript + Tailwind (Vite) · Caddyfile · Dockerfile
+├── frontend/            React + TypeScript + Tailwind (Vite) · Caddyfile · Dockerfile · admin dashboard (Admin.tsx)
 ├── scripts/             deploy.sh, setup-dns.sh (gddy CLI)
 ├── docs/presentation.html   architecture and product presentation (open in a browser)
 ├── docker-compose.yml   production stack
