@@ -81,6 +81,15 @@ MIGRATIONS = [
       received_at TEXT NOT NULL
     )""",
     "CREATE INDEX IF NOT EXISTS idx_enquiries_slug ON enquiries(slug, id)",
+    """CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT,
+      topic TEXT,
+      message TEXT NOT NULL,
+      received_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )""",
 ]
 _init_lock = threading.Lock()
 _ready = False

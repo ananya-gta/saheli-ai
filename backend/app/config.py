@@ -59,6 +59,8 @@ SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = _clean(os.getenv("SMTP_USER", ""))
 SMTP_PASS = _clean(os.getenv("SMTP_PASS", ""))
+# where the saheliai.com contact form is delivered; defaults to the platform mailbox itself
+CONTACT_EMAIL = _clean(os.getenv("CONTACT_EMAIL", "")) or SMTP_USER
 MAIL_FROM = _clean(os.getenv("MAIL_FROM", ""))
 MAIL_TO = _clean(os.getenv("MAIL_TO", ""))  # fallback inbox when the owner has no email
 # Public base URL of this API, used by generated sites for their enquiry forms.

@@ -159,9 +159,9 @@ export function Chat({ lang, onDashboard, resetKey, userId, userName, isAdmin = 
       const up = await api.uploadPhotos(images);
       const ctx = [profile?.category, profile?.business_name, profile?.city].filter(Boolean).join(", ");
       const res = await api.analyze(up.photo_ids, ctx);
-      if (!res.items.length) throw new Error("Photos mein koi product nahi dikha. Product ko roshni mein, paas se kheenchiye.");
+      if (!res.items.length) throw new Error(tx(lang, "Photos mein koi product nahi dikha. Product ko roshni mein, paas se kheenchiye.", "No product found in the photos. Take them closer, in good light."));
       setEntries((cur) => [...cur, { kind: "catalog", id: uid(), items: res.items }]);
-      if (up.errors.length) setEntries((cur) => [...cur, { kind: "error", id: uid(), message: `${up.errors.length} photo nahi chal paayi: ${up.errors[0].error}` }]);
+      if (up.errors.length) setEntries((cur) => [...cur, { kind: "error", id: uid(), message: tx(lang, `${up.errors.length} photo nahi chal paayi: ${up.errors[0].error}`, `${up.errors.length} photo(s) couldn't be used: ${up.errors[0].error}`) }]);
     } catch (err) {
       setEntries((cur) => [...cur, { kind: "error", id: uid(), message: (err as Error).message }]);
     } finally {

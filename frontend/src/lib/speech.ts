@@ -31,8 +31,9 @@ export function useVoiceInput(lang: Lang, onFinal: (text: string) => void) {
 
   const start = useCallback(() => {
     setError(null);
+    const en = lang === "en";
     const SR = recognizer();
-    if (!SR) { setError("Is browser mein voice support nahi hai — Chrome mein kholiye."); return; }
+    if (!SR) { setError(en ? "Voice isn't supported in this browser — open it in Chrome." : "Is browser mein voice support nahi hai — Chrome mein kholiye."); return; }
     const rec: Rec = new SR();
     rec.lang = lang === "hi" ? "hi-IN" : "en-IN";
     rec.interimResults = true;
@@ -48,8 +49,8 @@ export function useVoiceInput(lang: Lang, onFinal: (text: string) => void) {
       setInterim(finalText + text);
     };
     rec.onerror = (e) => {
-      setError(e.error === "not-allowed" ? "Microphone ki permission dijiye (address bar mein lock icon dabaiye)." :
-        e.error === "no-speech" ? "Kuch sunai nahi diya — dobara koshish kijiye." : "Voice mein dikkat aayi, dobara try kijiye.");
+      setError(e.error === "not-allowed" ? (en ? "Please allow the microphone (tap the lock icon in the address bar)." : "Microphone ki permission dijiye (address bar mein lock icon dabaiye).") :
+        e.error === "no-speech" ? (en ? "I didn't hear anything — please try again." : "Kuch sunai nahi diya — dobara koshish kijiye.") : (en ? "Something went wrong with voice, please try again." : "Voice mein dikkat aayi, dobara try kijiye."));
     };
     rec.onend = () => {
       setListening(false);

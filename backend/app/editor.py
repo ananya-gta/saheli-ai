@@ -38,8 +38,8 @@ EDIT_TOOL = {
     "description": "Apply the owner's requested change. Include ONLY fields that change.",
     "input_schema": {"type": "object", "properties": {
         **EDITABLE, **PROFILE_FIELDS,
-        "summary": {"type": "string", "description": "What you changed, one short friendly Hinglish sentence (Roman script)"},
-        "not_possible": {"type": "string", "description": "If the request can't be done by editing text/prices/products, explain briefly in Hinglish"},
+        "summary": {"type": "string", "description": "What you changed, one short friendly sentence in the SAME language the owner wrote in (English, or Hinglish in Roman script)"},
+        "not_possible": {"type": "string", "description": "If the request can't be done by editing text/prices/products, explain briefly in the same language the owner wrote in"},
     }, "required": ["summary"]},
 }
 

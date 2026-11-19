@@ -10,6 +10,7 @@ export function ScaledFrame({ src, title, height, interactive = false, pageWidth
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
   const [state, setState] = useState<"loading" | "loaded" | "failed">("loading");
+  const en = document.documentElement.lang === "en"; // set by the app's language switch
 
   useEffect(() => {
     const el = ref.current;
@@ -36,8 +37,8 @@ export function ScaledFrame({ src, title, height, interactive = false, pageWidth
       {state === "failed" && (
         <div className="absolute inset-0 grid place-items-center p-4 text-center">
           <div>
-            <p className="text-sm font-semibold text-ink">Preview load nahi hua</p>
-            <a href={src} target="_blank" rel="noopener" className="mt-1 inline-block text-sm font-semibold text-plum-700 underline">Website kholiye</a>
+            <p className="text-sm font-semibold text-ink">{en ? "Preview didn't load" : "Preview load nahi hua"}</p>
+            <a href={src} target="_blank" rel="noopener" className="mt-1 inline-block text-sm font-semibold text-plum-700 underline">{en ? "Open website" : "Website kholiye"}</a>
           </div>
         </div>
       )}

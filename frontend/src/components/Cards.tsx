@@ -140,13 +140,22 @@ export function CatalogReview({ items, onDone, done, lang = "hi", busy = false, 
 }
 
 /* ---------- transparent cost breakdown + approval ---------- */
-const BUILD_STAGES = [
-  { t: "Aapke business ke liye design chun rahi hoon", d: "Industry, rang aur fonts" },
-  { t: "Website ka content likh rahi hoon", d: "Kahani, products, FAQ" },
-  { t: "Photos dhoondh aur check kar rahi hoon", d: "Aapki photos + licensed photos" },
-  { t: "Website bana rahi hoon", d: "Mobile, SEO, enquiry form" },
-  { t: "Online kar rahi hoon", d: "Secure link (HTTPS)" },
-];
+const BUILD_STAGES: Record<Lang, { t: string; d: string }[]> = {
+  hi: [
+    { t: "Aapke business ke liye design chun rahi hoon", d: "Industry, rang aur fonts" },
+    { t: "Website ka content likh rahi hoon", d: "Kahani, products, FAQ" },
+    { t: "Photos dhoondh aur check kar rahi hoon", d: "Aapki photos + licensed photos" },
+    { t: "Website bana rahi hoon", d: "Mobile, SEO, enquiry form" },
+    { t: "Online kar rahi hoon", d: "Secure link (HTTPS)" },
+  ],
+  en: [
+    { t: "Choosing a design for your business", d: "Industry, colours and fonts" },
+    { t: "Writing your website content", d: "Story, products, FAQ" },
+    { t: "Finding and checking photos", d: "Your photos + licensed photos" },
+    { t: "Building the website", d: "Mobile, SEO, enquiry form" },
+    { t: "Putting it online", d: "Secure link (HTTPS)" },
+  ],
+};
 
 export function ApprovalCard({ approval, status, onApprove, onDecline, error, lang = "hi" }: {
   approval: Approval; status: "pending" | "building" | "done" | "declined"; onApprove: () => void; onDecline: () => void; error?: string; lang?: Lang;
@@ -154,7 +163,7 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error, la
   const [stage, setStage] = useState(0);
   useEffect(() => {
     if (status !== "building") { setStage(0); return; }
-    const t = setInterval(() => setStage((s) => Math.min(s + 1, BUILD_STAGES.length - 1)), 4500);
+    const t = setInterval(() => setStage((s) => Math.min(s + 1, BUILD_STAGES.hi.length - 1)), 4500);
     return () => clearInterval(t);
   }, [status]);
 
@@ -163,7 +172,7 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error, la
       <Card>
         <Eyebrow>{tx(lang, "Website ban rahi hai", "Building your website")}</Eyebrow>
         <ol className="mt-2 space-y-3">
-          {BUILD_STAGES.map((s, i) => (
+          {BUILD_STAGES[lang].map((s, i) => (
             <li key={s.t} className="flex gap-3">
               <span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition
                 ${i < stage ? "bg-leaf text-white" : i === stage ? "bg-plum-700 text-white ring-4 ring-plum-100" : "bg-cream text-muted"}`}>
@@ -211,7 +220,7 @@ export function ApprovalCard({ approval, status, onApprove, onDecline, error, la
 
 /* ---------- success ---------- */
 export function SuccessCard({ site, onDashboard, lang = "hi" }: { site: BuildResult; onDashboard: () => void; lang?: Lang }) {
-  const share = `Namaste! Ab aap ${site.content.business_name} ko online dekh sakte hain: ${site.url}`;
+  const share = tx(lang, `Namaste! Ab aap ${site.content.business_name} ko online dekh sakte hain: ${site.url}`, `Hello! ${site.content.business_name} is now online: ${site.url}`);
   const [copied, setCopied] = useState(false);
   return (
     <Card tone="success" className="overflow-hidden !p-0">
@@ -236,14 +245,14 @@ export function SuccessCard({ site, onDashboard, lang = "hi" }: { site: BuildRes
             <Icon name="whatsapp" className="size-[18px]" />{tx(lang, "WhatsApp par share", "Share on WhatsApp")}</a>
         </div>
         <div className="mt-2 flex gap-2">
-          <Button variant="secondary" className="flex-1" icon={copied ? "check" : "copy"} onClick={() => { navigator.clipboard?.writeText(site.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }}>{copied ? "Copied" : "Link copy"}</Button>
+          <Button variant="secondary" className="flex-1" icon={copied ? "check" : "copy"} onClick={() => { navigator.clipboard?.writeText(site.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }}>{copied ? tx(lang, "Copy ho gaya", "Copied") : tx(lang, "Link copy", "Copy link")}</Button>
           <Button variant="secondary" className="flex-1" icon="grid" onClick={onDashboard}>Dashboard</Button>
         </div>
         {site.verification && (
           <div className={`mt-4 rounded-2xl border p-3.5 ${site.verification.ok ? "border-leaf/30 bg-leaf-50" : "border-rose/30 bg-rose/5"}`}>
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Icon name={site.verification.ok ? "shield" : "x"} className={`size-4 ${site.verification.ok ? "text-leaf" : "text-rose"}`} />
-              {site.verification.ok ? "Saheli ne khud website khol kar check kiya" : "Website check nahi ho paayi"}
+              {site.verification.ok ? tx(lang, "Saheli ne khud website khol kar check kiya", "Saheli opened your website and checked it") : tx(lang, "Website check nahi ho paayi", "The website check didn't pass")}
               <code className="ml-auto text-[11px] font-normal text-muted">{site.verification.status ?? "—"}{site.verification.ms ? ` · ${site.verification.ms} ms` : ""}</code>
             </p>
             {site.verification.checks && (
@@ -266,8 +275,8 @@ export function SuccessCard({ site, onDashboard, lang = "hi" }: { site: BuildRes
           </button>
         )}
         <div className="mt-3 space-y-2">
-          {site.photos.count === 0 && <Notice tone="warn">Photos download nahi ho payi — server ka internet check karein, phir dashboard se dobara banaiye.</Notice>}
-          {!site.integrations.email && <Notice>Orders aur enquiries aapke Dashboard mein aayengi. Email notifications abhi is server par chalu nahi hain.</Notice>}
+          {site.photos.count === 0 && <Notice tone="warn">{tx(lang, "Photos nahi mil paayi — Dashboard mein 'Photos jodo' se apni photos lagaiye.", "Photos couldn't be fetched — add your own with 'Add photos' on the Dashboard.")}</Notice>}
+          {!site.integrations.email && <Notice>{tx(lang, "Orders aur enquiries aapke Dashboard mein aayengi. Email notifications abhi chalu nahi hain.", "Orders and enquiries will appear on your Dashboard. Email notifications aren't on yet.")}</Notice>}
         </div>
       </div>
     </Card>
@@ -323,7 +332,7 @@ export function ExecutionLog({ items, onClose, isAdmin = false }: { items: Activ
           <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-cream" aria-label="Close"><Icon name="x" /></button>
         </header>
         <ol className="flex-1 divide-y divide-line overflow-y-auto font-mono text-[12px]">
-          {items.length === 0 && <li className="p-6 text-center font-sans text-sm text-muted">Abhi tak koi tool call nahi hua.</li>}
+          {items.length === 0 && <li className="p-6 text-center font-sans text-sm text-muted">No tool calls yet.</li>}
           {items.map((a, i) => {
             const [st, cls] = status(a);
             return (

@@ -96,7 +96,7 @@ export function DemoVideo({ lang, onTry }: { lang: Lang; onTry: () => void }) {
             <div className="absolute inset-0 flex flex-col justify-between p-5 sm:p-9">
               <div className="flex items-center gap-2.5 text-ivory/85"><LogoMark size={30} /><span className="text-sm font-semibold">Saheli AI · demo</span></div>
               <p className="max-w-xl rounded-3xl rounded-bl-md bg-white/95 px-4 py-3 font-display text-[15px] leading-snug text-ink shadow-lift sm:px-5 sm:py-4 sm:text-[24px]">
-                “Mere paas 20 tarah ke achaar hain. Main Jaipur se poore India mein bhejna chahti hoon.”</p>
+                {lang === "en" ? "“I make 20 kinds of pickles. I want to sell from Jaipur to all of India.”" : "“Mere paas 20 tarah ke achaar hain. Main Jaipur se poore India mein bhejna chahti hoon.”"}</p>
               {state === "missing" ? (
                 <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-black/35 p-3 backdrop-blur sm:p-3.5">
                   <span className="min-w-0 flex-1 text-[12.5px] leading-snug text-ivory/90 sm:text-sm"><b className="block">{lang === "hi" ? "Demo video abhi upload nahi hua hai" : "The demo video hasn't been uploaded yet"}</b>

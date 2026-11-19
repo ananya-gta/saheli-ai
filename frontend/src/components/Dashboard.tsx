@@ -400,7 +400,10 @@ function AssistantCard({ slug, lang, onDone }: { slug: string; lang: Lang; onDon
 
 /* ---------- customer orders from the website (and AI agents) ---------- */
 const rupees = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
-const STATUS_LABEL: Record<Order["status"], string> = { new: "Naya", confirmed: "Confirm", delivered: "Deliver ho gaya", cancelled: "Cancel" };
+const STATUS_LABEL: Record<Lang, Record<Order["status"], string>> = {
+  hi: { new: "Naya", confirmed: "Confirm", delivered: "Deliver ho gaya", cancelled: "Cancel" },
+  en: { new: "New", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" },
+};
 
 function OrdersCard({ slug, lang, onChanged }: { slug: string; lang: Lang; onChanged: () => void }) {
   const [data, setData] = useState<{ orders: Order[]; stats: OrderStats } | null>(null);
@@ -445,32 +448,32 @@ function OrdersCard({ slug, lang, onChanged }: { slug: string; lang: Lang; onCha
             </button>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
               <span className={`rounded-full px-2 py-0.5 font-semibold ${o.payment_status === "paid" ? "bg-leaf-50 text-leaf" : "bg-saffron-50 text-[#9A6420]"}`}>
-                {o.payment_status === "paid" ? "Payment mili · aapne confirm kiya" : o.payment_method === "upi" ? "UPI payment pending" : "Cash on delivery · pending"}</span>
-              <span className="rounded-full bg-cream px-2 py-0.5 text-muted">{STATUS_LABEL[o.status]}</span>
+                {o.payment_status === "paid" ? tx(lang, "Payment mili · aapne confirm kiya", "Paid · confirmed by you") : o.payment_method === "upi" ? "UPI payment pending" : "Cash on delivery · pending"}</span>
+              <span className="rounded-full bg-cream px-2 py-0.5 text-muted">{STATUS_LABEL[lang][o.status]}</span>
               <span className="ml-auto text-muted">{new Date(o.created_at.replace(" ", "T") + (o.created_at.includes("Z") ? "" : "Z")).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
             </div>
             {open === o.id && (
               <div className="mt-3 space-y-3 rounded-xl bg-cream/60 p-3 text-sm animate-rise">
                 <ul className="space-y-0.5">{o.items.map((i, k) => <li key={k} className="flex justify-between gap-2"><span>{i.name}{i.unit ? ` (${i.unit})` : ""} × {i.qty}</span><span className="text-muted">{rupees(i.amount)}</span></li>)}</ul>
                 <p className="text-xs text-muted">{o.customer_phone}{o.address ? ` · ${o.address}` : ""}{o.pincode ? ` · ${o.pincode}` : ""}</p>
-                {o.payment_method === "upi" && o.payment_status === "pending" && <p className="text-xs text-muted">UPI payment seedha aapke account mein aata hai. Apne UPI app mein “Order {o.code}” check karke yahan mark kijiye.</p>}
+                {o.payment_method === "upi" && o.payment_status === "pending" && <p className="text-xs text-muted">{tx(lang, `UPI payment seedha aapke account mein aata hai. Apne UPI app mein “Order ${o.code}” check karke yahan mark kijiye.`, `UPI payments go straight to your account. Check for “Order ${o.code}” in your UPI app, then mark it here.`)}</p>}
                 <div className="flex flex-wrap gap-2">
-                  {o.payment_status === "pending" && confirmPay !== o.id && <Button variant="secondary" onClick={() => setConfirmPay(o.id)} icon="wallet">Payment mil gayi?</Button>}
+                  {o.payment_status === "pending" && confirmPay !== o.id && <Button variant="secondary" onClick={() => setConfirmPay(o.id)} icon="wallet">{tx(lang, "Payment mil gayi?", "Payment received?")}</Button>}
                   {o.payment_status === "pending" && confirmPay === o.id && (
                     <div className="w-full rounded-xl border border-saffron/40 bg-saffron-50 p-3">
-                      <p className="text-sm font-semibold">Kya aapne apne {o.payment_method === "upi" ? "UPI app / bank" : "haath"} mein {rupees(o.total)} aate hue dekha?</p>
-                      <p className="mt-0.5 text-xs text-muted">Saheli payment khud verify nahi kar sakti — sirf aap confirm kar sakti hain.{o.payment_method === "upi" ? ` Note mein “Order ${o.code}” dhoondhiye.` : ""}</p>
+                      <p className="text-sm font-semibold">{tx(lang, `Kya aapne apne ${o.payment_method === "upi" ? "UPI app / bank" : "haath"} mein ${rupees(o.total)} aate hue dekha?`, `Did you see ${rupees(o.total)} arrive ${o.payment_method === "upi" ? "in your UPI app / bank" : "in cash"}?`)}</p>
+                      <p className="mt-0.5 text-xs text-muted">{tx(lang, "Saheli payment khud verify nahi kar sakti — sirf aap confirm kar sakti hain.", "Saheli can't verify payments itself — only you can confirm.")}{o.payment_method === "upi" ? tx(lang, ` Note mein “Order ${o.code}” dhoondhiye.`, ` Look for “Order ${o.code}” in the note.`) : ""}</p>
                       <div className="mt-2 flex gap-2">
-                        <Button loading={busy === o.id} onClick={async () => { await patch(o, { payment_status: "paid" }); setConfirmPay(null); }} icon="check">Haan, mil gayi</Button>
-                        <Button variant="secondary" onClick={() => setConfirmPay(null)}>Abhi nahi</Button>
+                        <Button loading={busy === o.id} onClick={async () => { await patch(o, { payment_status: "paid" }); setConfirmPay(null); }} icon="check">{tx(lang, "Haan, mil gayi", "Yes, received")}</Button>
+                        <Button variant="secondary" onClick={() => setConfirmPay(null)}>{tx(lang, "Abhi nahi", "Not yet")}</Button>
                       </div>
                     </div>
                   )}
-                  {o.payment_status === "paid" && <button onClick={() => patch(o, { payment_status: "pending" })} className="text-xs font-semibold text-muted hover:text-rose">Galti se mark kiya? Wapas karein</button>}
+                  {o.payment_status === "paid" && <button onClick={() => patch(o, { payment_status: "pending" })} className="text-xs font-semibold text-muted hover:text-rose">{tx(lang, "Galti se mark kiya? Wapas karein", "Marked by mistake? Undo")}</button>}
                   {o.status === "new" && <a href={waConfirm(o)} target="_blank" rel="noopener" onClick={() => patch(o, { status: "confirmed" })}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1E9E57] px-4 text-sm font-semibold text-white"><Icon name="whatsapp" className="size-4" />Confirm on WhatsApp</a>}
-                  {(o.status === "new" || o.status === "confirmed") && <Button variant="secondary" loading={busy === o.id} onClick={() => patch(o, { status: "delivered" })} icon="check">Deliver ho gaya</Button>}
-                  {o.status !== "cancelled" && o.status !== "delivered" && <button onClick={() => patch(o, { status: "cancelled" })} className="text-xs font-semibold text-muted hover:text-rose">Cancel</button>}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1E9E57] px-4 text-sm font-semibold text-white"><Icon name="whatsapp" className="size-4" />{tx(lang, "WhatsApp par confirm", "Confirm on WhatsApp")}</a>}
+                  {(o.status === "new" || o.status === "confirmed") && <Button variant="secondary" loading={busy === o.id} onClick={() => patch(o, { status: "delivered" })} icon="check">{tx(lang, "Deliver ho gaya", "Delivered")}</Button>}
+                  {o.status !== "cancelled" && o.status !== "delivered" && <button onClick={() => patch(o, { status: "cancelled" })} className="text-xs font-semibold text-muted hover:text-rose">{tx(lang, "Cancel karein", "Cancel")}</button>}
                 </div>
               </div>
             )}

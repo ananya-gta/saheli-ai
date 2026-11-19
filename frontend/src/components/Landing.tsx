@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type LandingData, type ShowcaseSite } from "../api";
 import type { Lang } from "../types";
 import { DemoVideo, STORYBOARD } from "./DemoVideo";
@@ -276,7 +276,7 @@ function CountUp({ to, ms = 1300 }: { to: number; ms?: number }) {
 const rupees = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 
 /* ------------------------------------------------------------------ page */
-export function Landing({ lang, onStart, onVoice, onDashboard, hasSites }: { lang: Lang; onStart: () => void; onVoice: () => void; onDashboard: () => void; hasSites: boolean }) {
+export function Landing({ lang, onStart, onVoice, onDashboard, hasSites, footer }: { lang: Lang; onStart: () => void; onVoice: () => void; onDashboard: () => void; hasSites: boolean; footer?: ReactNode }) {
   const t = C[lang];
   const [sites, setSites] = useState<ShowcaseSite[] | null>(null);
   const [data, setData] = useState<LandingData | null>(null);
@@ -397,7 +397,7 @@ export function Landing({ lang, onStart, onVoice, onDashboard, hasSites }: { lan
       </div>
 
       {/* ================= demo video ================= */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
+      <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
         <div className="max-w-3xl" data-reveal>
           <Eyebrow>{t.vEyebrow}</Eyebrow>
           <h2 className="mt-2 font-display text-[34px] leading-tight sm:text-5xl">{t.vTitle}</h2>
@@ -698,13 +698,7 @@ export function Landing({ lang, onStart, onVoice, onDashboard, hasSites }: { lan
         </div>
       </section>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-8 text-sm text-muted md:grid-cols-[1.2fr_1fr_auto] md:items-center">
-          <div className="flex items-center gap-3"><LogoMark size={36} /><span><b className="block font-display text-base text-ink">Saheli AI</b>{lang === "hi" ? "Har chhote business ke liye — khaas taur par mahila udyamiyon ke liye." : "For every small business — designed first for women entrepreneurs."}</span></div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1"><a href="mailto:hello@saheliai.com" className="hover:text-plum-700">hello@saheliai.com</a><span>Powered by <b className="font-semibold text-ink">Anthropic × GoDaddy</b></span></div>
-          <p className="text-xs md:text-right">© 2026 Ananya Gupta. All rights reserved.</p>
-        </div>
-      </footer>
+      {footer}
     </div>
   );
 }

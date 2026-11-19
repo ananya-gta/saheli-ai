@@ -53,3 +53,16 @@ def test_failure_drill_is_admin_only(monkeypatch):
     login("admin@example.com")
     client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]}, headers={"X-Saheli-Fault": "claude"})
     assert seen["fault"] is True
+
+
+def test_contact_form_is_saved_and_mailed_to_the_platform_mailbox(monkeypatch):
+    from app import config, db, mailer
+    sent = {}
+    monkeypatch.setattr(config, "CONTACT_EMAIL", "hello@saheliai.com")
+    monkeypatch.setattr(mailer, "send_later", lambda to, subject, body, reply_to=None, what="": sent.update(to=to, reply_to=reply_to) or True)
+    r = client.post("/api/contact", json={"name": "Priya", "email": "priya@example.com", "topic": "help", "message": "Website kaise banaun?"})
+    assert r.status_code == 200 and r.json()["email_queued"] is True
+    assert sent == {"to": "hello@saheliai.com", "reply_to": "priya@example.com"}
+    assert db.one("SELECT name FROM contact_messages WHERE email = ?", "priya@example.com")["name"] == "Priya"
+    assert client.post("/api/contact", json={"name": "x", "email": "not-an-email", "message": "hello there"}).status_code == 422
+    assert client.get("/api/contact").json()["email"] == "hello@saheliai.com"

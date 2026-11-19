@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import account, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, orders, resilience, sitegen, sitestore, storefront
+from . import account, agent, auth, catalog, config, db, editor, enquiries, godaddy, landing, launch, mailer, orders, resilience, sitegen, sitestore, storefront
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s rid=%(request_id)s %(message)s")
 _request_id: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
@@ -562,6 +562,36 @@ class Enquiry(BaseModel):
     area: str | None = Field(default=None, max_length=120)
     grade: str | None = Field(default=None, max_length=60)
     website: str | None = None  # honeypot: real people never fill this
+
+
+class ContactMessage(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=5, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    phone: str | None = Field(default=None, max_length=20)
+    topic: Literal["question", "help", "partnership", "press", "other"] = "question"
+    message: str = Field(min_length=5, max_length=3000)
+    website: str | None = None  # honeypot: real people never fill this
+
+
+@app.get("/api/contact")
+def contact_info():
+    return {"email": config.CONTACT_EMAIL or None}
+
+
+@app.post("/api/contact")
+def contact(msg: ContactMessage, request: Request):
+    """The saheliai.com contact form: saved first, then emailed to the platform mailbox in the background."""
+    if msg.website:
+        return {"ok": True, "email_queued": False}
+    ip = request.client.host if request.client else "unknown"
+    if _rate_limited(f"contact:{ip}", limit=5, window=3600):
+        raise HTTPException(429, "Too many messages. Please try again later.")
+    db.run("INSERT INTO contact_messages(name, email, phone, topic, message) VALUES (?, ?, ?, ?, ?)",
+           msg.name.strip(), msg.email.strip(), (msg.phone or "").strip() or None, msg.topic, msg.message.strip())
+    body = (f"New message from the saheliai.com contact form\n\nName: {msg.name}\nEmail: {msg.email}\n"
+            f"Phone: {msg.phone or '-'}\nTopic: {msg.topic}\n\n{msg.message}\n")
+    queued = mailer.send_later(config.CONTACT_EMAIL, f"[Saheli AI] {msg.topic}: {msg.name}", body, reply_to=msg.email, what="contact")
+    return {"ok": True, "email_queued": queued}
 
 
 @app.post("/api/sites/{slug}/enquiry")

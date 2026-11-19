@@ -76,6 +76,9 @@ export const api = {
   orders: (slug: string) => req<{ orders: Order[]; stats: OrderStats }>(`/api/sites/${slug}/orders`),
   updateOrder: (slug: string, id: number, patch: Partial<Pick<Order, "status" | "payment_status">>) =>
     req<Order>(`/api/sites/${slug}/orders/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  contactInfo: () => req<{ email: string | null }>("/api/contact"),
+  contact: (msg: { name: string; email: string; phone?: string; topic: string; message: string; website?: string }) =>
+    post<{ ok: boolean; email_queued: boolean }>("/api/contact", msg),
   showcase: () => req<{ sites: ShowcaseSite[] }>("/api/showcase"),
   landing: () => req<LandingData>("/api/landing"),
 };
