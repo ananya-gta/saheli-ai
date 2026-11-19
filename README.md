@@ -141,6 +141,37 @@ assistant can browse the products and place an order.
 
 ## 5. Architecture
 
+```mermaid
+flowchart TB
+    users["<b>Owner · Customers · AI assistants</b><br/>saheliai.com · &lt;name&gt;.saheliai.com"]
+    dns["<b>GoDaddy DNS</b><br/>domain + wildcard subdomain"]
+    users --> dns
+    subgraph vps["GoDaddy VPS · Docker Compose"]
+        web["<b>web: Caddy</b><br/>HTTPS, React app,<br/>generated websites"]
+        api["<b>api: FastAPI</b><br/>Claude agent, orders,<br/>auth, site builder"]
+        vol[("<b>Docker volumes</b><br/>SQLite DB, websites,<br/>certificates")]
+        web -- "/api, /mcp" --> api
+        web -- "serves sites" --> vol
+        api -- "builds sites, stores data" --> vol
+    end
+    dns --> web
+    subgraph ext["External services"]
+        claude["<b>Claude API</b><br/>chat, vision, content"]
+        gd["<b>GoDaddy Domains API</b><br/>availability, prices"]
+        mail["<b>Titan mailbox</b><br/>login codes, order emails"]
+    end
+    api --> claude
+    api --> gd
+    api -- SMTP --> mail
+    classDef core fill:#3b2f8a,stroke:#8b7ff0,color:#fff
+    classDef svc fill:#0b5041,stroke:#4fd1a5,color:#fff
+    class web,api core
+    class claude,gd,mail svc
+```
+
+<details>
+<summary>Module map (inside the containers)</summary>
+
 ```
                  ┌──────────────────────── GoDaddy VPS (Docker Compose) ─────────────────────────┐
  Owner (phone) ──┤  Caddy  (HTTPS, on-demand certificates, security headers)                    │
@@ -166,6 +197,7 @@ assistant can browse the products and place an order.
                                                         └─ SMTP → Titan mailbox on the domain
 ```
 
+</details>
 Design principles:
 - **Claude proposes, code decides.** AI output is structured (tool calls with JSON schemas), validated, and
   rendered by deterministic code. The agent never spends money, and nothing is published without the owner's tap.
@@ -224,6 +256,23 @@ Design principles:
 | Languages beyond Hindi / Hinglish / English | ❌ Not yet |
 
 The demo video is a product walkthrough recorded with **sample data** (labelled in the video).
+
+### Roadmap
+
+**Next (closing the gaps above)**
+- **Her own domain, end to end:** buy through the GoDaddy API after her approval, point DNS to her site, and renew on time, with reminders in Hindi.
+- **Real payments:** a UPI payment gateway so orders are marked paid automatically.
+- **More Indian languages:** Devanagari Hindi, then Marathi, Tamil, Bengali and others, plus a warmer neural Hindi voice.
+
+**Growth for her business**
+- **WhatsApp Business:** order alerts and replies to customers on the app she already uses every day.
+- **Google Business Profile and Maps** listing created from the same profile.
+- **Monthly insights by voice:** *"Is mahine 32 orders aaye, aam ka achaar sabse zyada bika."*
+- **Credit and schemes:** use her order history to guide her to Mudra loans and government schemes for women entrepreneurs.
+
+**Scale**
+- **Data:** move from SQLite (WAL) to managed PostgreSQL. All access goes through one module (`db.py`), so this is a contained change.
+- **Reach:** partner with self-help groups and NGOs to onboard women who don't have email yet (phone/OTP login).
 
 ## 8. Run it locally
 
